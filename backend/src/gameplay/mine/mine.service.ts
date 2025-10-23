@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { NotificationService } from '../../notification/notification.service';
 import { UserService } from '../../user/user.service';
 import { ItemService } from '../../item/item.service';
+import { RankingService } from '../../ranking/ranking.service';
 
 interface UserMineState {
   intervalMs: number;
@@ -19,6 +20,7 @@ export class MineService {
     private readonly notification: NotificationService,
     private readonly users: UserService,
     private readonly items: ItemService,
+    private readonly ranking: RankingService,
   ) {}
 
   start(userId: string) {
@@ -84,6 +86,7 @@ export class MineService {
     const collected = state.cartAmount;
     state.cartAmount = 0;
     if (collected > 0) this.users.addResource(userId, 'ore', collected);
+    if (collected > 0) this.ranking.addScore(userId, collected);
     return collected;
   }
 

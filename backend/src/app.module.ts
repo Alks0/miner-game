@@ -11,6 +11,7 @@ import { MineModule } from './gameplay/mine/mine.module';
 import { ItemModule } from './item/item.module';
 import { PlunderModule } from './gameplay/plunder/plunder.module';
 import { ExchangeModule } from './exchange/exchange.module';
+import { RankingModule } from './ranking/ranking.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ExchangeModule } from './exchange/exchange.module';
     ItemModule,
     PlunderModule,
     ExchangeModule,
+    RankingModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

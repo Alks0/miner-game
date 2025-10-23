@@ -20,6 +20,7 @@ const mine_module_1 = require("./gameplay/mine/mine.module");
 const item_module_1 = require("./item/item.module");
 const plunder_module_1 = require("./gameplay/plunder/plunder.module");
 const exchange_module_1 = require("./exchange/exchange.module");
+const ranking_module_1 = require("./ranking/ranking.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -35,6 +36,7 @@ exports.AppModule = AppModule = __decorate([
             item_module_1.ItemModule,
             plunder_module_1.PlunderModule,
             exchange_module_1.ExchangeModule,
+            ranking_module_1.RankingModule,
         ],
         controllers: [app_controller_1.AppController, health_controller_1.HealthController],
         providers: [app_service_1.AppService],

@@ -239,3 +239,11 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 撮合规则（简化）：
 - 买单撮合价格>=卖价，优先价优、同价按时间优先
 - 成交后：道具从卖家转移到买家，卖家获得币；买家的币在下单时已扣
+
+---
+
+## 排行榜（内存版）
+
+- 加分：收矿时按收获的矿石数累计
+- 查询 TopN：`GET /api/ranking/top?n=50`
+- 查看我的名次：`GET /api/ranking/me`
