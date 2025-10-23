@@ -11,7 +11,7 @@ export class UserController {
   @Get('profile')
   async profile(@Req() req: any) {
     const user = await this.users.findById(req.user.sub);
-    return { id: user.id, username: user.username, nickname: user.nickname };
+    return { id: user.id, username: user.username, nickname: user.nickname, oreAmount: user.oreAmount, bbCoins: user.bbCoins };
   }
 
   @Patch('nickname')

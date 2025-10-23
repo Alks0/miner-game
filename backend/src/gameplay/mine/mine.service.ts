@@ -1,18 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { NotificationService } from '../../notification/notification.service';
+import { UserService } from '../../user/user.service';
 
 interface UserMineState {
   intervalMs: number;
   timer?: NodeJS.Timeout;
   cartAmount: number;
   cartCapacity: number;
+  collapsedUntil?: number;
 }
 
 @Injectable()
 export class MineService {
   private userState: Map<string, UserMineState> = new Map();
 
-  constructor(private readonly notification: NotificationService) {}
+  constructor(
+    private readonly notification: NotificationService,
+    private readonly users: UserService,
+  ) {}
 
   start(userId: string) {
     let state = this.userState.get(userId);
@@ -35,11 +40,20 @@ export class MineService {
   private produceOnce(userId: string) {
     const state = this.userState.get(userId);
     if (!state) return;
+    const now = Date.now();
+    if (state.collapsedUntil && now < state.collapsedUntil) {
+      return;
+    }
     const base = 10;
     const random = Math.random();
-    let type: 'normal' | 'critical' = 'normal';
+    let type: 'normal' | 'critical' | 'collapse' = 'normal';
     let amount = base;
-    if (random < 0.25) {
+    if (random < 0.05) {
+      type = 'collapse';
+      amount = 0;
+      state.collapsedUntil = now + 120000; // 2分钟
+      this.notification.emitToUser(userId, 'mine.collapse', { repair_duration: 120 });
+    } else if (random < 0.30) {
       type = 'critical';
       amount = base * 3;
     }
@@ -64,6 +78,14 @@ export class MineService {
     const state = this.userState.get(userId) || { intervalMs: 3000, cartAmount: 0, cartCapacity: 1000 };
     const collected = state.cartAmount;
     state.cartAmount = 0;
+    if (collected > 0) this.users.addResource(userId, 'ore', collected);
     return collected;
+  }
+
+  getStatus(userId: string) {
+    const state = this.userState.get(userId) || { intervalMs: 3000, cartAmount: 0, cartCapacity: 1000 };
+    const now = Date.now();
+    const collapsedRemaining = state.collapsedUntil && now < state.collapsedUntil ? Math.ceil((state.collapsedUntil - now) / 1000) : 0;
+    return { collapsed: collapsedRemaining > 0, collapsedRemaining };
   }
 }

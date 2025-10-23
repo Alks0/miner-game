@@ -29,4 +29,9 @@ export class MineController {
     const collected = this.mine.collect(req.user.sub);
     return { collected };
   }
+
+  @Get('status')
+  status(@Req() req: any) {
+    return this.mine.getStatus(req.user.sub);
+  }
 }

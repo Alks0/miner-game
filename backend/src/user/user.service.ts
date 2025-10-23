@@ -6,6 +6,8 @@ export interface UserEntity {
   username: string;
   passwordHash: string;
   nickname?: string;
+  oreAmount: number;
+  bbCoins: number;
 }
 
 @Injectable()
@@ -19,7 +21,7 @@ export class UserService {
     }
     const id = `u_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const passwordHash = await bcrypt.hash(password, 10);
-    const user: UserEntity = { id, username, passwordHash, nickname: username };
+    const user: UserEntity = { id, username, passwordHash, nickname: username, oreAmount: 0, bbCoins: 0 };
     this.usersById.set(id, user);
     this.usersByName.set(username, user);
     return user;
@@ -41,6 +43,33 @@ export class UserService {
   async updateNickname(id: string, nickname: string): Promise<void> {
     const user = await this.findById(id);
     user.nickname = nickname;
+  }
+
+  async addResource(
+    id: string,
+    resource: 'ore' | 'coin',
+    amount: number,
+  ): Promise<void> {
+    const user = await this.findById(id);
+    if (resource === 'ore') user.oreAmount += amount;
+    else user.bbCoins += amount;
+  }
+
+  async consumeResource(
+    id: string,
+    resource: 'ore' | 'coin',
+    amount: number,
+  ): Promise<boolean> {
+    const user = await this.findById(id);
+    if (resource === 'ore') {
+      if (user.oreAmount < amount) return false;
+      user.oreAmount -= amount;
+      return true;
+    } else {
+      if (user.bbCoins < amount) return false;
+      user.bbCoins -= amount;
+      return true;
+    }
   }
 }
 

@@ -133,10 +133,29 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ## 用户接口（内存版示例）
 
-- 获取资料：`GET /api/user/profile` （需 Bearer Token）
+- 获取资料：`GET /api/user/profile` （需 Bearer Token）返回含资源：`{ id, username, nickname, oreAmount, bbCoins }`
 - 修改昵称：`PATCH /api/user/nickname`，请求体：`{"nickname":"新昵称"}`（需 Bearer Token）
 
 ---
+
+## 挖矿（内存版示例）
+
+- 开始挖矿：`POST /api/mine/start`（需 Bearer Token）
+- 停止挖矿：`POST /api/mine/stop`
+- 查询矿车：`GET /api/mine/cart`
+- 收矿：`POST /api/mine/collect`（收矿后计入用户 `oreAmount`）
+- 状态查询：`GET /api/mine/status`（返回 `{ collapsed, collapsedRemaining }`）
+
+### WebSocket 事件（命名空间 /game）
+- 连接方式（示例）：
+  ```js
+  const socket = io("http://localhost:3000/game", { auth: { token: "<JWT>" } });
+  socket.on('mine.update', (msg) => console.log(msg));
+  socket.on('mine.collapse', (msg) => console.log(msg));
+  ```
+- 事件：
+  - `mine.update`：`{ type: 'normal'|'critical', amount, cartAmount, cartCapacity }`
+  - `mine.collapse`：`{ repair_duration: 120 }`
 
 ## 统一响应与错误格式
 
@@ -177,18 +196,3 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
   ```
 
 ---
-
-## 挖矿（内存版示例）
-
-- 开始挖矿：`POST /api/mine/start`（需 Bearer Token）
-- 停止挖矿：`POST /api/mine/stop`
-- 查询矿车：`GET /api/mine/cart`
-- 收矿：`POST /api/mine/collect`
-
-### WebSocket 事件（命名空间 /game）
-- 连接方式（示例）：
-  ```js
-  const socket = io("http://localhost:3000/game", { auth: { token: "<JWT>" } });
-  socket.on('mine.update', (msg) => console.log(msg));
-  ```
-- 事件：`mine.update`，数据：`{ type: 'normal'|'critical', amount, cartAmount, cartCapacity }`
