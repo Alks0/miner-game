@@ -148,3 +148,47 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
   ```json
   { "code": 400, "message": "Bad Request Exception", "error": "BadRequestException" }
   ```
+
+---
+
+## 数据库（可选）
+
+- 通过环境变量开启数据库：`DB_ENABLE=1`
+- PostgreSQL 默认配置：
+  - `DB_HOST=localhost`
+  - `DB_PORT=5432`
+  - `DB_USERNAME=postgres`
+  - `DB_PASSWORD=postgres`
+  - `DB_NAME=mining_game`
+
+### 迁移（TypeORM CLI）
+
+- 生成迁移：
+  ```bash
+  npm run typeorm migration:generate src/database/migrations/Init -d src/data-source.ts
+  ```
+- 运行迁移：
+  ```bash
+  npm run typeorm migration:run -d src/data-source.ts
+  ```
+- 回滚迁移：
+  ```bash
+  npm run typeorm migration:revert -d src/data-source.ts
+  ```
+
+---
+
+## 挖矿（内存版示例）
+
+- 开始挖矿：`POST /api/mine/start`（需 Bearer Token）
+- 停止挖矿：`POST /api/mine/stop`
+- 查询矿车：`GET /api/mine/cart`
+- 收矿：`POST /api/mine/collect`
+
+### WebSocket 事件（命名空间 /game）
+- 连接方式（示例）：
+  ```js
+  const socket = io("http://localhost:3000/game", { auth: { token: "<JWT>" } });
+  socket.on('mine.update', (msg) => console.log(msg));
+  ```
+- 事件：`mine.update`，数据：`{ type: 'normal'|'critical', amount, cartAmount, cartCapacity }`
