@@ -9,6 +9,7 @@ import { DatabaseModule } from './database/database.module';
 import { NotificationModule } from './notification/notification.module';
 import { MineModule } from './gameplay/mine/mine.module';
 import { ItemModule } from './item/item.module';
+import { PlunderModule } from './gameplay/plunder/plunder.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ItemModule } from './item/item.module';
     NotificationModule,
     MineModule,
     ItemModule,
+    PlunderModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

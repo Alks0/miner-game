@@ -72,6 +72,14 @@ export class UserService {
     }
   }
 
+  listNearbyByLevel(userId: string) {
+    const self = this.usersById.get(userId);
+    const all = Array.from(this.usersById.values()).filter(u => u.id !== userId);
+    // 内存版无等级字段，这里简单随机返回最多 10 个且矿石>0
+    const candidates = all.filter(u => u.oreAmount > 0);
+    return candidates.slice(0, 10);
+  }
+
   async ensureFromPayload(payload: { sub: string; username?: string }): Promise<UserEntity> {
     const existing = this.usersById.get(payload.sub);
     if (existing) return existing;

@@ -207,3 +207,16 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 ### 挖矿加成规则（当前内存版）
 - 矿机等级：每升 1 级，产出间隔缩短 100ms（最小 1s）
 - 矿车等级：每升 1 级，容量 +500（基础 1000）
+
+---
+
+## 掠夺（内存版示例）
+
+- 目标列表：`GET /api/plunder/targets`（需 Bearer Token）
+- 执行掠夺：`POST /api/plunder/{defenderId}`
+  - 掠夺率：基础 10% + 掠夺器(每级+1%) - 防御盾(每级-0.5%)，范围 5%~30%
+  - 成功后：被掠夺者 `oreAmount` 扣减，攻击者 `oreAmount` 增加
+  - 冷却：当前为 1 小时（演示可调整）
+
+### WebSocket 事件
+- `plunder.attacked`：`{ attacker, loss }`（被掠夺通知）

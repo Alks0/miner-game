@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 
-export type ItemCategory = 'miner' | 'cart';
+export type ItemCategory = 'miner' | 'cart' | 'raider' | 'shield';
 
 export interface ItemTemplate {
   id: string;
@@ -21,6 +21,8 @@ export class ItemService {
   private templates: ItemTemplate[] = [
     { id: 'tpl-miner-1', name: '青铜矿机', category: 'miner' },
     { id: 'tpl-cart-1', name: '木制矿车', category: 'cart' },
+    { id: 'tpl-raider-1', name: '生锈掠夺器', category: 'raider' },
+    { id: 'tpl-shield-1', name: '木制防御盾', category: 'shield' },
   ];
 
   private userItems: Map<string, UserItemInstance[]> = new Map();
@@ -42,6 +44,12 @@ export class ItemService {
     }
     if (!items.find(i => i.templateId === 'tpl-cart-1')) {
       items.push({ id: `itm_${Date.now()}_c`, templateId: 'tpl-cart-1', level: 1, isEquipped: true });
+    }
+    if (!items.find(i => i.templateId === 'tpl-raider-1')) {
+      items.push({ id: `itm_${Date.now()}_r`, templateId: 'tpl-raider-1', level: 1, isEquipped: true });
+    }
+    if (!items.find(i => i.templateId === 'tpl-shield-1')) {
+      items.push({ id: `itm_${Date.now()}_s`, templateId: 'tpl-shield-1', level: 1, isEquipped: true });
     }
     this.userItems.set(userId, items);
   }
@@ -71,7 +79,9 @@ export class ItemService {
     const items = this.listUserItems(userId);
     const miner = items.find(i => i.isEquipped && this.templates.find(t => t.id === i.templateId)?.category === 'miner');
     const cart = items.find(i => i.isEquipped && this.templates.find(t => t.id === i.templateId)?.category === 'cart');
-    return { minerLevel: miner?.level || 1, cartLevel: cart?.level || 1 };
+    const raider = items.find(i => i.isEquipped && this.templates.find(t => t.id === i.templateId)?.category === 'raider');
+    const shield = items.find(i => i.isEquipped && this.templates.find(t => t.id === i.templateId)?.category === 'shield');
+    return { minerLevel: miner?.level || 1, cartLevel: cart?.level || 1, raiderLevel: raider?.level || 1, shieldLevel: shield?.level || 1 };
   }
 }
 
