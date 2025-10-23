@@ -1,2 +1,31 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Line endings
+*.sh text eol=lf
+*.bash text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.aac binary
+*.mp4 binary
+*.mov binary
+*.zip binary
+*.rar binary
+*.7z binary
+*.tar binary
+*.gz binary
+*.fbx binary
+*.ttf binary
+*.otf binary
