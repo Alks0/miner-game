@@ -109,7 +109,7 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ## 认证接口（最小可用示例）
 
-- 登录：`POST /api/auth/login`
+- 注册：`POST /api/auth/register`
 
   请求体：
   ```json
@@ -120,6 +120,8 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
   { "access_token": "...", "user": {"id":"demo-user-id","username":"user"} }
   ```
 
+- 登录：`POST /api/auth/login`
+
 - 受保护资料：`GET /api/auth/profile`
 
   请求头：`Authorization: Bearer <access_token>`
@@ -127,4 +129,22 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
   响应体示例：
   ```json
   { "userId": "demo-user-id", "username": "user" }
+  ```
+
+## 用户接口（内存版示例）
+
+- 获取资料：`GET /api/user/profile` （需 Bearer Token）
+- 修改昵称：`PATCH /api/user/nickname`，请求体：`{"nickname":"新昵称"}`（需 Bearer Token）
+
+---
+
+## 统一响应与错误格式
+
+- 成功：
+  ```json
+  { "code": 200, "message": "success", "data": { /* 具体数据 */ } }
+  ```
+- 失败（示例）：
+  ```json
+  { "code": 400, "message": "Bad Request Exception", "error": "BadRequestException" }
   ```
