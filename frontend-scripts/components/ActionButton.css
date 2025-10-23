@@ -1,0 +1,25 @@
+.btn {
+  position: relative;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7B2CF5, #2C89F5);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 12px #7B2CF5;
+  overflow: hidden;
+}
+.btn::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.35), transparent 60%);
+  transform: translate(-50%,-50%);
+  border-radius: 50%;
+  opacity: 0;
+  transition: width .4s ease, height .4s ease, opacity .4s ease;
+}
+.btn:active::after {
+  width: 220px; height: 220px; opacity: .4;
+}
+
+

@@ -43,3 +43,14 @@ backend/
 - 开启数据库：设置 `DB_ENABLE=1` 并参阅 `backend/README.md` 的迁移说明
 - WebSocket 命名空间：`/game`（`mine.update`、`mine.collapse`、`plunder.attacked`）
 
+## 前端运行（Cocos Creator 3.x，本地预览）
+
+1) 在 Cocos 新建 2D/H5 项目，打开工程
+2) 将 `frontend-scripts/` 下脚本拷入你的 `assets/scripts/`（或按需目录）
+3) 在网页模板中引入 socket.io-client（如需 WS），或改用内置 WebSocket
+4) 在浏览器控制台执行：
+```js
+MinerApp.bootstrap(document.body)
+```
+默认流程：登录/注册 → 进入主界面 → 开始挖矿 → 收矿 → 资源实时刷新。视觉风格为紫蓝渐变科技风（卡片+发光+涟漪）。
+

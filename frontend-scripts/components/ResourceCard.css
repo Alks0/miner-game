@@ -1,0 +1,12 @@
+.card {
+  padding: 16px;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(123,44,245,.25), rgba(44,137,245,.25));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.35), 0 0 12px rgba(123,44,245,.7);
+}
+.row { display: flex; justify-content: space-between; margin: 6px 0; }
+.row strong { font-size: 20px; }
+
+
