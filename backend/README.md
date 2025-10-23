@@ -220,3 +220,22 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ### WebSocket 事件
 - `plunder.attacked`：`{ attacker, loss }`（被掠夺通知）
+
+---
+
+## 交易所（内存撮合示例）
+
+- 查询挂单：`GET /api/exchange/orders?item_template_id=tpl-miner-1&type=sell|buy`
+- 挂买单：`POST /api/exchange/orders`
+  ```json
+  { "type": "buy", "item_template_id": "tpl-miner-1", "price": 1000, "amount": 1 }
+  ```
+- 挂卖单：`POST /api/exchange/orders`
+  ```json
+  { "type": "sell", "item_instance_id": "itm_xxx", "price": 1000 }
+  ```
+- 撤单：`DELETE /api/exchange/orders/{orderId}`
+
+撮合规则（简化）：
+- 买单撮合价格>=卖价，优先价优、同价按时间优先
+- 成交后：道具从卖家转移到买家，卖家获得币；买家的币在下单时已扣
