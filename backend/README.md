@@ -23,7 +23,7 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+本后端默认以“本地单机可运行”为目标：JWT + WebSocket + 内存存储即可跑通前端全部功能；数据库/Redis/队列均为可选拓展。
 
 ## Project setup
 

@@ -1,5 +1,7 @@
 # miner-game
 
+> 运行原则：默认本地单机即可跑通（JWT + WebSocket + 内存存储）。数据库/Redis/队列均为可选，按需开启。
+
 ## 后端运行指南（NestJS）
 
 ### 目录结构
@@ -36,4 +38,8 @@ backend/
    npm run build
    npm run start:prod
    ```
+
+可选扩展
+- 开启数据库：设置 `DB_ENABLE=1` 并参阅 `backend/README.md` 的迁移说明
+- WebSocket 命名空间：`/game`（`mine.update`、`mine.collapse`、`plunder.attacked`）
 

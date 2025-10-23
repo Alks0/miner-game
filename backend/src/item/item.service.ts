@@ -14,6 +14,7 @@ export interface UserItemInstance {
   templateId: string;
   level: number;
   isEquipped: boolean;
+  isListed?: boolean; // 交易中锁定
 }
 
 @Injectable()
@@ -58,6 +59,7 @@ export class ItemService {
     const items = this.listUserItems(userId);
     const item = items.find(i => i.id === itemId);
     if (!item) throw new NotFoundException('道具不存在');
+    if (item.isListed) throw new NotFoundException('道具已在交易中');
     const template = this.templates.find(t => t.id === item.templateId)!;
     // 同类只允许一个装备
     items.forEach(i => {
@@ -71,6 +73,7 @@ export class ItemService {
     const items = this.listUserItems(userId);
     const item = items.find(i => i.id === itemId);
     if (!item) throw new NotFoundException('道具不存在');
+    if (item.isListed) throw new NotFoundException('道具已在交易中');
     item.level += 1;
     return { level: item.level };
   }
@@ -82,6 +85,35 @@ export class ItemService {
     const raider = items.find(i => i.isEquipped && this.templates.find(t => t.id === i.templateId)?.category === 'raider');
     const shield = items.find(i => i.isEquipped && this.templates.find(t => t.id === i.templateId)?.category === 'shield');
     return { minerLevel: miner?.level || 1, cartLevel: cart?.level || 1, raiderLevel: raider?.level || 1, shieldLevel: shield?.level || 1 };
+  }
+
+  findUserItem(userId: string, itemId: string) {
+    return this.listUserItems(userId).find(i => i.id === itemId);
+  }
+
+  lockItem(userId: string, itemId: string) {
+    const it = this.findUserItem(userId, itemId);
+    if (!it) throw new NotFoundException('道具不存在');
+    if (it.isEquipped) throw new NotFoundException('已装备的道具无法出售');
+    it.isListed = true;
+  }
+
+  unlockItem(userId: string, itemId: string) {
+    const it = this.findUserItem(userId, itemId);
+    if (it) it.isListed = false;
+  }
+
+  transferItemInstance(sellerId: string, buyerId: string, itemId: string) {
+    const sellerItems = this.listUserItems(sellerId);
+    const idx = sellerItems.findIndex(i => i.id === itemId);
+    if (idx < 0) throw new NotFoundException('道具不存在');
+    const inst = sellerItems[idx];
+    sellerItems.splice(idx, 1);
+    inst.isListed = false;
+    inst.isEquipped = false;
+    const buyerItems = this.userItems.get(buyerId) || [];
+    buyerItems.push(inst);
+    this.userItems.set(buyerId, buyerItems);
   }
 }
 
