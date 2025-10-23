@@ -12,14 +12,12 @@ export class MineController {
     // 确保用户存在（token直连时）
     // @ts-ignore
     this.mine['users'].ensureFromPayload(req.user);
-    this.mine.start(req.user.sub);
-    return { started: true };
+    return this.mine.start(req.user.sub);
   }
 
   @Post('stop')
   stop(@Req() req: any) {
-    this.mine.stop(req.user.sub);
-    return { stopped: true };
+    return this.mine.stop(req.user.sub);
   }
 
   @Get('cart')
@@ -33,8 +31,7 @@ export class MineController {
   collect(@Req() req: any) {
     // @ts-ignore
     this.mine['users'].ensureFromPayload(req.user);
-    const collected = this.mine.collect(req.user.sub);
-    return { collected };
+    return this.mine.collect(req.user.sub);
   }
 
   @Get('status')

@@ -1,40 +1,67 @@
 import { NetworkManager } from '../core/NetworkManager';
 import { html, qs } from '../utils/dom';
 import { renderNav } from '../components/Nav';
+import { RealtimeClient } from '../core/RealtimeClient';
+import { renderResourceBar } from '../components/ResourceBar';
 
 export class RankingScene {
   mount(root: HTMLElement) {
     root.innerHTML = '';
     root.appendChild(renderNav('ranking'));
+    const bar = renderResourceBar();
+    root.appendChild(bar.root);
+
     const view = html(`
-      <div style="max-width:520px;margin:12px auto;color:#fff;">
-        <div style="padding:12px;border-radius:16px;background:linear-gradient(135deg, rgba(123,44,245,.25), rgba(44,137,245,.25));backdrop-filter:blur(10px);box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 12px rgba(123,44,245,.7);">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <h3 style="margin:0">排行榜</h3>
-            <button id="refresh" style="padding:8px 12px;border-radius:10px;color:#fff;background:linear-gradient(135deg,#7B2CF5,#2C89F5);border:0;">刷新</button>
+      <div class="container" style="color:#fff;">
+        <div class="card fade-in">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h3 style="margin:0;">排行榜</h3>
+            <button id="refresh" class="btn btn-primary">刷新</button>
           </div>
-          <div id="me" style="margin-top:8px;opacity:.95"></div>
-          <div id="list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;"></div>
+          <div id="me" style="margin-top:8px;opacity:.95;"></div>
+          <div id="list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
         </div>
       </div>
     `);
     root.appendChild(view);
 
+    const token = (NetworkManager as any).I['token'];
+    if (token) RealtimeClient.I.connect(token);
+
+    const meBox = qs(view, '#me');
+    const list = qs(view, '#list');
+    const refreshBtn = qs<HTMLButtonElement>(view, '#refresh');
+
     const load = async () => {
-      const me = await NetworkManager.I.request<{ rank:number; score:number }>(`/ranking/me`);
-      const top = await NetworkManager.I.request<{ list:any[] }>(`/ranking/top?n=20`);
-      qs(view, '#me').textContent = `我的名次：${me.rank}  得分：${me.score}`;
-      const list = qs(view, '#list');
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = '刷新中…';
+      await bar.update();
       list.innerHTML = '';
-      for (const r of top.list) {
-        const row = html(`<div style="display:flex;justify-content:space-between;background:rgba(255,255,255,.06);border-radius:10px;padding:8px;">
-          <span>#${r.rank}</span><span>${r.userId}</span><strong>${r.score}</strong>
-        </div>`);
-        list.appendChild(row);
+      for (let i = 0; i < 3; i++) list.appendChild(html('<div class="skeleton"></div>'));
+      try {
+        const me = await NetworkManager.I.request<{ rank: number; score: number }>('/ranking/me');
+        const top = await NetworkManager.I.request<{ list: any[] }>('/ranking/top?n=20');
+        meBox.textContent = `我的名次：#${me.rank} · 总得分：${me.score}`;
+        list.innerHTML = '';
+        for (const entry of top.list) {
+          const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : '';
+          const row = html(`
+            <div class="list-item" style="${entry.rank === 1 ? 'border-left:3px solid var(--ok);' : ''}">
+              <span>${medal} #${entry.rank}</span>
+              <span style="flex:1;opacity:.9;margin-left:12px;">${entry.userId}</span>
+              <strong>${entry.score}</strong>
+            </div>
+          `);
+          list.appendChild(row);
+        }
+      } catch (e: any) {
+        meBox.textContent = e?.message || '排行榜加载失败';
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = '刷新';
       }
     };
-    qs<HTMLButtonElement>(view, '#refresh').onclick = load;
+    refreshBtn.onclick = () => load();
     load();
   }
 }
-

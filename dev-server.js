@@ -1,6 +1,6 @@
 // Simple one-click dev runner for miner-game
 // - Ensures backend deps, starts NestJS backend on :3000
-// - Serves a lightweight H5 demo on :5173 and proxies /api -> backend to avoid CORS
+// - Serves H5 on :5173 (with API proxy) and bundles frontend-scripts via esbuild
 
 const http = require('http');
 const fs = require('fs');
@@ -33,8 +33,41 @@ async function ensureBackendDeps() {
   }
 }
 
+async function ensureEsbuild() {
+  try {
+    require.resolve('esbuild');
+    return;
+  } catch {}
+  console.log('[dev] Installing esbuild (for frontend bundling)...');
+  await run('npm', ['install', '-D', 'esbuild', '--no-fund', '--no-audit'], { cwd: ROOT });
+}
+
+async function startFrontendBundle() {
+  await ensureEsbuild();
+  const esbuild = require('esbuild');
+  const entry = path.join(ROOT, 'frontend-scripts', 'App.ts');
+  const outfile = path.join(WEB_DIR, 'app.js');
+  try {
+    const ctx = await esbuild.context({
+      entryPoints: [entry],
+      bundle: true,
+      sourcemap: 'inline',
+      outfile,
+      platform: 'browser',
+      target: ['es2018'],
+      loader: { '.ts': 'ts' },
+      format: 'iife',
+      logLevel: 'silent',
+    });
+    await ctx.watch();
+    console.log('[dev] Frontend bundler: watching frontend-scripts -> web/app.js');
+  } catch (e) {
+    console.error('[dev] esbuild failed:', e && e.message ? e.message : e);
+  }
+}
+
 function startBackend() {
-  console.log('[dev] Starting backend on :3000 ...');
+  console.log(`[dev] Starting backend on :${BACKEND_PORT} ...`);
   const ps = spawn('npm', ['run', 'start:dev'], { cwd: BACKEND_DIR, shell: process.platform === 'win32', env: { ...process.env, PORT: BACKEND_PORT } });
   ps.stdout?.on('data', d => process.stdout.write(`[backend] ${d}`));
   ps.stderr?.on('data', d => process.stderr.write(`[backend] ${d}`));
@@ -210,14 +243,42 @@ async function main() {
     console.log('[dev] Created web/index.html');
   }
 
+  // Always ensure module-based index that boots frontend-scripts bundle
+  try {
+    const indexHtml = path.join(WEB_DIR, 'index.html');
+    fs.writeFileSync(indexHtml, `<!doctype html>
+<html>
+<head>
+  <meta charset=\"utf-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Miner Game - Dev</title>
+  <script src=\"https://cdn.socket.io/4.7.5/socket.io.min.js\"></script>
+  <script>window.__API_BASE__='/api'; window.__WS_ENDPOINT__='http://localhost:${BACKEND_PORT}/game';</script>
+</head>
+<body>
+  <div id=\"app-root\"></div>
+  <script src=\"/app.js\"></script>
+  <script>window.MinerApp && window.MinerApp.bootstrap(document.getElementById('app-root')||document.body);</script>
+</body>
+</html>`);
+    console.log('[dev] Synced web/index.html');
+  } catch {}
+
+  // Start esbuild watcher for frontend-scripts
+  startFrontendBundle();
+
   const server = http.createServer((req, res) => {
-    const url = req.url || '/';
-    if (url.startsWith('/api/')) {
+    const raw = req.url || '/';
+    const p = new URL(raw, 'http://localhost').pathname;
+    if (p.startsWith('/api/')) {
       return proxyApi(req, res);
     }
-    // static
-    let filePath = path.join(WEB_DIR, decodeURIComponent(url.split('?')[0]));
-    if (filePath.endsWith('/')) filePath = path.join(filePath, 'index.html');
+    // static (normalize leading slash and default to index.html)
+    let rel = p;
+    if (rel === '/' || rel === '') rel = 'index.html';
+    if (rel.startsWith('/')) rel = rel.slice(1);
+    if (rel.endsWith('/')) rel = rel + 'index.html';
+    let filePath = path.join(WEB_DIR, rel);
     if (!exists(filePath)) filePath = path.join(WEB_DIR, 'index.html');
     serveStatic(res, filePath);
   });

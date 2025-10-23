@@ -5,6 +5,7 @@ import { WarehouseScene } from './scenes/WarehouseScene';
 import { PlunderScene } from './scenes/PlunderScene';
 import { ExchangeScene } from './scenes/ExchangeScene';
 import { RankingScene } from './scenes/RankingScene';
+import { ensureGlobalStyles } from './styles/inject';
 
 function routeTo(container: HTMLElement) {
   const h = location.hash || '#/login';
@@ -31,6 +32,7 @@ function routeTo(container: HTMLElement) {
 }
 
 export async function bootstrap(container: HTMLElement) {
+  ensureGlobalStyles();
   routeTo(container);
   window.onhashchange = () => routeTo(container);
 }

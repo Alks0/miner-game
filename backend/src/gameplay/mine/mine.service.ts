@@ -24,24 +24,20 @@ export class MineService {
   ) {}
 
   start(userId: string) {
-    let state = this.userState.get(userId);
-    if (state?.timer) return;
-    if (!state) {
-      const { minerLevel, cartLevel } = this.items.getEquippedLevels(userId);
-      const intervalMs = Math.max(1000, 3000 - (minerLevel - 1) * 100);
-      const cartCapacity = 1000 + (cartLevel - 1) * 500;
-      state = { intervalMs, cartAmount: 0, cartCapacity };
-      this.userState.set(userId, state);
+    const state = this.ensureState(userId);
+    if (!state.timer) {
+      state.timer = setInterval(() => this.produceOnce(userId), state.intervalMs);
     }
-    state.timer = setInterval(() => this.produceOnce(userId), state.intervalMs);
+    return this.buildStatus(state);
   }
 
   stop(userId: string) {
-    const state = this.userState.get(userId);
+    const state = this.ensureState(userId);
     if (state?.timer) {
       clearInterval(state.timer);
       state.timer = undefined;
     }
+    return this.buildStatus(state);
   }
 
   private produceOnce(userId: string) {
@@ -49,6 +45,15 @@ export class MineService {
     if (!state) return;
     const now = Date.now();
     if (state.collapsedUntil && now < state.collapsedUntil) {
+      this.notification.emitToUser(userId, 'mine.update', {
+        type: 'idle',
+        amount: 0,
+        cartAmount: state.cartAmount,
+        cartCapacity: state.cartCapacity,
+        collapsed: true,
+        collapsedRemaining: Math.ceil((state.collapsedUntil - now) / 1000),
+        running: Boolean(state.timer),
+      });
       return;
     }
     const base = 10;
@@ -59,7 +64,8 @@ export class MineService {
       type = 'collapse';
       amount = 0;
       state.collapsedUntil = now + 120000; // 2分钟
-      this.notification.emitToUser(userId, 'mine.collapse', { repair_duration: 120 });
+      const remaining = Math.ceil((state.collapsedUntil - now) / 1000);
+      this.notification.emitToUser(userId, 'mine.collapse', { repair_duration: remaining });
     } else if (random < 0.30) {
       type = 'critical';
       amount = base * 3;
@@ -72,36 +78,75 @@ export class MineService {
       amount: gain,
       cartAmount: state.cartAmount,
       cartCapacity: state.cartCapacity,
+      collapsed: false,
+      collapsedRemaining: 0,
+      running: Boolean(state.timer),
     });
   }
 
   getCart(userId: string) {
-    const state = this.userState.get(userId) || { intervalMs: 3000, cartAmount: 0, cartCapacity: 1000 };
-    this.userState.set(userId, state);
+    const state = this.ensureState(userId);
     return { cartAmount: state.cartAmount, cartCapacity: state.cartCapacity };
   }
 
   collect(userId: string) {
-    const state = this.userState.get(userId) || { intervalMs: 3000, cartAmount: 0, cartCapacity: 1000 };
+    const state = this.ensureState(userId);
     const collected = state.cartAmount;
     state.cartAmount = 0;
     if (collected > 0) this.users.addResource(userId, 'ore', collected);
     if (collected > 0) this.ranking.addScore(userId, collected);
-    return collected;
+    this.notification.emitToUser(userId, 'mine.update', {
+      type: 'collect',
+      amount: 0,
+      cartAmount: state.cartAmount,
+      cartCapacity: state.cartCapacity,
+      collapsed: Boolean(state.collapsedUntil && state.collapsedUntil > Date.now()),
+      collapsedRemaining: this.getCollapsedRemaining(state),
+      running: Boolean(state.timer),
+    });
+    return { collected, status: this.buildStatus(state) };
   }
 
   getStatus(userId: string) {
-    const state = this.userState.get(userId) || { intervalMs: 3000, cartAmount: 0, cartCapacity: 1000 };
-    const now = Date.now();
-    const collapsedRemaining = state.collapsedUntil && now < state.collapsedUntil ? Math.ceil((state.collapsedUntil - now) / 1000) : 0;
-    return { collapsed: collapsedRemaining > 0, collapsedRemaining };
+    const state = this.ensureState(userId);
+    return this.buildStatus(state);
   }
 
   repair(userId: string) {
-    const state = this.userState.get(userId);
+    const state = this.ensureState(userId);
     if (state) {
       state.collapsedUntil = undefined;
     }
-    return { repaired: true };
+    return this.buildStatus(state);
+  }
+
+  private ensureState(userId: string): UserMineState {
+    let state = this.userState.get(userId);
+    if (!state) {
+      const { minerLevel, cartLevel } = this.items.getEquippedLevels(userId);
+      const intervalMs = Math.max(1000, 3000 - (minerLevel - 1) * 100);
+      const cartCapacity = 1000 + (cartLevel - 1) * 500;
+      state = { intervalMs, cartAmount: 0, cartCapacity };
+      this.userState.set(userId, state);
+    }
+    return state;
+  }
+
+  private buildStatus(state: UserMineState) {
+    const collapsedRemaining = this.getCollapsedRemaining(state);
+    return {
+      cartAmount: state.cartAmount,
+      cartCapacity: state.cartCapacity,
+      collapsed: collapsedRemaining > 0,
+      collapsedRemaining,
+      running: Boolean(state.timer),
+      intervalMs: state.intervalMs,
+    };
+  }
+
+  private getCollapsedRemaining(state: UserMineState) {
+    if (!state.collapsedUntil) return 0;
+    const now = Date.now();
+    return state.collapsedUntil > now ? Math.ceil((state.collapsedUntil - now) / 1000) : 0;
   }
 }

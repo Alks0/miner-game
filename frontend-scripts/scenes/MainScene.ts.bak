@@ -1,0 +1,98 @@
+import { GameManager } from '../core/GameManager';
+import { NetworkManager } from '../core/NetworkManager';
+import { RealtimeClient } from '../core/RealtimeClient';
+import { html, qs } from '../utils/dom';
+import { renderNav } from '../components/Nav';
+import { showToast } from '../components/Toast';
+
+export class MainScene {
+  private ore = 0; private coin = 0; private cartAmt = 0; private cartCap = 1000;
+
+  mount(root: HTMLElement) {
+    const view = html(`
+      <div style="max-width:420px;margin:20px auto;color:#fff;">
+        <div class="res card" style="padding:16px;border-radius:16px;background:linear-gradient(135deg, rgba(123,44,245,.25), rgba(44,137,245,.25));backdrop-filter:blur(10px);box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 12px rgba(123,44,245,.7);">
+          <div style="display:flex;justify-content:space-between"><span>💎 矿石</span><strong id="ore">0</strong></div>
+          <div style="display:flex;justify-content:space-between"><span>🪙 BB�?/span><strong id="coin">0</strong></div>
+        </div>
+        <div class="mine card" style="padding:16px;border-radius:16px;margin-top:12px;background:linear-gradient(135deg, rgba(123,44,245,.25), rgba(44,137,245,.25));backdrop-filter:blur(10px);box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 12px rgba(123,44,245,.7);">
+          <div style="opacity:.9;margin-bottom:8px;">⛏️ 挖矿</div>
+          <div style="height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden"><div id="fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7B2CF5,#2C89F5);box-shadow:0 0 10px #7B2CF5;transition:width .3s ease"></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 12px"><span>矿车</span><strong id="percent">0%</strong></div>
+          <div style="display:flex;gap:8px;">
+            <button id="start" style="flex:1;padding:12px;border-radius:12px;color:#fff;background:#2C89F5;border:0;">开�?/button>
+            <button id="stop" style="flex:1;padding:12px;border-radius:12px;color:#fff;background:#666;border:0;">停止</button>
+            <button id="collect" style="flex:1;padding:12px;border-radius:12px;color:#fff;background:#7B2CF5;border:0;">收矿</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="status" style="flex:1;padding:10px;border-radius:12px;color:#fff;background:#4A4A7F;border:0;">状�?/button>
+            <button id="repair" style="flex:1;padding:10px;border-radius:12px;color:#fff;background:#E36414;border:0;">修理</button>
+          </div>
+          <div id="statusText" style="margin-top:6px;opacity:.9"></div>
+        </div>
+      </div>
+    `);
+    root.innerHTML = '';
+    root.appendChild(renderNav('main'));
+    root.appendChild(view);
+    this.refreshFromProfile(view);
+    this.bindRealtime(view);
+    qs<HTMLButtonElement>(view, '#start').onclick = () => this.startMining(view);
+    qs<HTMLButtonElement>(view, '#stop').onclick = () => this.stopMining();
+    qs<HTMLButtonElement>(view, '#status').onclick = () => this.showStatus(view);
+    qs<HTMLButtonElement>(view, '#repair').onclick = () => this.repair(view);
+    qs<HTMLButtonElement>(view, '#collect').onclick = () => this.collect(view);
+  }
+
+  private async refreshFromProfile(view: HTMLElement) {
+    const p = GameManager.I.getProfile();
+    if (p) { this.ore = p.oreAmount; this.coin = p.bbCoins; }
+    qs(view, '#ore').textContent = `${this.ore}`;
+    qs(view, '#coin').textContent = `${this.coin}`;
+  }
+
+  private bindRealtime(view: HTMLElement) {
+    const token = (NetworkManager as any).I['token'];
+    if (token) RealtimeClient.I.connect(token);
+    RealtimeClient.I.on('mine.update', (msg) => {
+      this.cartAmt = msg.cartAmount; this.cartCap = msg.cartCapacity;
+      const pct = Math.min(1, this.cartAmt / this.cartCap);
+      qs(view, '#fill').setAttribute('style', `height:100%;width:${Math.round(pct*100)}%;background:linear-gradient(90deg,#7B2CF5,#2C89F5);box-shadow:0 0 10px #7B2CF5;transition:width .3s ease`);
+      qs(view, '#percent').textContent = `${Math.round(pct*100)}%`;
+    });
+    RealtimeClient.I.on('plunder.attacked', (msg) => {
+      showToast(`被掠夺：来自 ${msg.attacker}，损�?${msg.loss}`);
+    });
+  }
+
+  private async startMining(view: HTMLElement) {
+    await NetworkManager.I.request('/mine/start', { method: 'POST' });
+    const cart = await NetworkManager.I.request<{ cartAmount:number; cartCapacity:number }>('/mine/cart');
+    this.cartAmt = cart.cartAmount; this.cartCap = cart.cartCapacity;
+    const pct = Math.min(1, this.cartAmt / this.cartCap);
+    qs(view, '#fill').setAttribute('style', `height:100%;width:${Math.round(pct*100)}%;background:linear-gradient(90deg,#7B2CF5,#2C89F5);box-shadow:0 0 10px #7B2CF5;transition:width .3s ease`);
+    qs(view, '#percent').textContent = `${Math.round(pct*100)}%`;
+  }
+
+  private async stopMining() {
+    await NetworkManager.I.request('/mine/stop', { method: 'POST' });
+  }
+
+  private async collect(view: HTMLElement) {
+    const r = await NetworkManager.I.request<{ collected:number }>('/mine/collect', { method: 'POST' });
+    this.ore += r.collected;
+    qs(view, '#ore').textContent = `${this.ore.toLocaleString()}`;
+  }
+
+  private async showStatus(view: HTMLElement) {
+    const s = await NetworkManager.I.request<{ collapsed:boolean; collapsedRemaining:number }>('/mine/status');
+    const t = s.collapsed ? `矿道坍塌，剩�?${s.collapsedRemaining}s` : '运行正常';
+    qs(view, '#statusText').textContent = t;
+  }
+
+  private async repair(view: HTMLElement) {
+    await NetworkManager.I.request('/mine/repair', { method:'POST' });
+    qs(view, '#statusText').textContent = '已修�?;
+  }
+}
+

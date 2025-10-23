@@ -4,19 +4,22 @@ type Handler = (data: any) => void;
 
 export class RealtimeClient {
   private static _instance: RealtimeClient;
-  static get I(): RealtimeClient { return this._instance ?? (this._instance = new RealtimeClient()); }
+  static get I(): RealtimeClient {
+    return this._instance ?? (this._instance = new RealtimeClient());
+  }
 
   private socket: any | null = null;
   private handlers: Record<string, Handler[]> = {};
 
   connect(token: string) {
-    const w: any = window as any;
+    const w = window as any;
     if (w.io) {
+      if (this.socket && (this.socket.connected || this.socket.connecting)) return;
       this.socket = w.io(WS_ENDPOINT, { auth: { token } });
       this.socket.on('connect', () => {});
       this.socket.onAny((event: string, payload: any) => this.emitLocal(event, payload));
     } else {
-      // 未引入 socket.io 客户端时，降级为无推送
+      // socket.io client not loaded; disable realtime updates
       this.socket = null;
     }
   }
@@ -25,9 +28,14 @@ export class RealtimeClient {
     (this.handlers[event] ||= []).push(handler);
   }
 
+  off(event: string, handler: Handler) {
+    const arr = this.handlers[event];
+    if (!arr) return;
+    const idx = arr.indexOf(handler);
+    if (idx >= 0) arr.splice(idx, 1);
+  }
+
   private emitLocal(event: string, payload: any) {
-    (this.handlers[event] || []).forEach(h => h(payload));
+    (this.handlers[event] || []).forEach((h) => h(payload));
   }
 }
-
-
