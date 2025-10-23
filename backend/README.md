@@ -196,3 +196,14 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
   ```
 
 ---
+
+## 道具（内存版示例）
+
+- 列出模板：`GET /api/items/templates`
+- 列出我的道具：`GET /api/items`（首次会发基础矿机与矿车并默认装备）
+- 装备：`POST /api/items/equip`，请求体：`{"itemId":"..."}`
+- 升级：`POST /api/items/upgrade`，请求体：`{"itemId":"..."}`
+
+### 挖矿加成规则（当前内存版）
+- 矿机等级：每升 1 级，产出间隔缩短 100ms（最小 1s）
+- 矿车等级：每升 1 级，容量 +500（基础 1000）

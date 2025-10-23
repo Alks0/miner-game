@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { DatabaseModule } from './database/database.module';
 import { NotificationModule } from './notification/notification.module';
 import { MineModule } from './gameplay/mine/mine.module';
+import { ItemModule } from './item/item.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { MineModule } from './gameplay/mine/mine.module';
     UserModule,
     NotificationModule,
     MineModule,
+    ItemModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

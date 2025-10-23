@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { NotificationService } from '../../notification/notification.service';
 import { UserService } from '../../user/user.service';
+import { ItemService } from '../../item/item.service';
 
 interface UserMineState {
   intervalMs: number;
@@ -17,13 +18,17 @@ export class MineService {
   constructor(
     private readonly notification: NotificationService,
     private readonly users: UserService,
+    private readonly items: ItemService,
   ) {}
 
   start(userId: string) {
     let state = this.userState.get(userId);
     if (state?.timer) return;
     if (!state) {
-      state = { intervalMs: 3000, cartAmount: 0, cartCapacity: 1000 };
+      const { minerLevel, cartLevel } = this.items.getEquippedLevels(userId);
+      const intervalMs = Math.max(1000, 3000 - (minerLevel - 1) * 100);
+      const cartCapacity = 1000 + (cartLevel - 1) * 500;
+      state = { intervalMs, cartAmount: 0, cartCapacity };
       this.userState.set(userId, state);
     }
     state.timer = setInterval(() => this.produceOnce(userId), state.intervalMs);
@@ -87,5 +92,13 @@ export class MineService {
     const now = Date.now();
     const collapsedRemaining = state.collapsedUntil && now < state.collapsedUntil ? Math.ceil((state.collapsedUntil - now) / 1000) : 0;
     return { collapsed: collapsedRemaining > 0, collapsedRemaining };
+  }
+
+  repair(userId: string) {
+    const state = this.userState.get(userId);
+    if (state) {
+      state.collapsedUntil = undefined;
+    }
+    return { repaired: true };
   }
 }

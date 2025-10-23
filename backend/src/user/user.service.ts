@@ -71,6 +71,24 @@ export class UserService {
       return true;
     }
   }
+
+  async ensureFromPayload(payload: { sub: string; username?: string }): Promise<UserEntity> {
+    const existing = this.usersById.get(payload.sub);
+    if (existing) return existing;
+    const username = payload.username || `player_${payload.sub.slice(-6)}`;
+    const passwordHash = await bcrypt.hash('placeholder', 6);
+    const user: UserEntity = {
+      id: payload.sub,
+      username,
+      passwordHash,
+      nickname: username,
+      oreAmount: 0,
+      bbCoins: 0,
+    };
+    this.usersById.set(user.id, user);
+    this.usersByName.set(user.username, user);
+    return user;
+  }
 }
 
 

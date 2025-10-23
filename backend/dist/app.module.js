@@ -17,6 +17,7 @@ const user_module_1 = require("./user/user.module");
 const database_module_1 = require("./database/database.module");
 const notification_module_1 = require("./notification/notification.module");
 const mine_module_1 = require("./gameplay/mine/mine.module");
+const item_module_1 = require("./item/item.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
             user_module_1.UserModule,
             notification_module_1.NotificationModule,
             mine_module_1.MineModule,
+            item_module_1.ItemModule,
         ],
         controllers: [app_controller_1.AppController, health_controller_1.HealthController],
         providers: [app_service_1.AppService],
