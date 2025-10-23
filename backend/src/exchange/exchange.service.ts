@@ -31,10 +31,10 @@ export class ExchangeService {
     };
   }
 
-  placeBuy(userId: string, itemTemplateId: string, price: number, amount: number) {
+  async placeBuy(userId: string, itemTemplateId: string, price: number, amount: number) {
     if (amount <= 0 || price <= 0) throw new BadRequestException('参数错误');
     const total = price * amount;
-    const ok = this.users.consumeResource(userId, 'coin', total);
+    const ok = await this.users.consumeResource(userId, 'coin', total);
     if (!ok) throw new BadRequestException('BB币不足');
     const order: Order = {
       id: `o_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
