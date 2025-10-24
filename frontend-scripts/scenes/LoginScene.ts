@@ -6,7 +6,7 @@ import { renderIcon } from '../components/Icon';
 export class LoginScene {
   mount(root: HTMLElement) {
     const view = html(`
-      <div class="container" style="color:#fff;">
+      <div class="container grid-2" style="color:#fff;">
         <div class="card fade-in" style="max-width:460px;margin:46px auto;">
           <div class="scene-header">
             <div>

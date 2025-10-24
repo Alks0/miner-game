@@ -16,7 +16,7 @@ export class PlunderScene {
     root.appendChild(bar.root);
 
     const view = html(`
-      <div class="container" style="color:#fff;">
+      <div class="container grid-2" style="color:#fff;">
         <div class="card fade-in">
           <div class="row" style="justify-content:space-between;align-items:center;">
             <h3 style="margin:0;display:flex;align-items:center;gap:8px;"><span data-ico="sword"></span>掠夺目标</h3>

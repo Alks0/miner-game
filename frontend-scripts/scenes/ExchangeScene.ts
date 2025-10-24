@@ -30,7 +30,7 @@ export class ExchangeScene {
     const nav = renderNav('exchange');
     const bar = renderResourceBar();
     const view = html(`
-      <div class="container" style="color:#fff;display:flex;flex-direction:column;gap:12px;">
+      <div class="container grid-2" style="color:#fff;">
         <div class="card fade-in">
           <h3 style="margin:0 0 12px;display:flex;align-items:center;gap:8px;"><span data-ico="exchange"></span>市场下单</h3>
           <div class="row" style="flex-wrap:wrap;align-items:flex-end;gap:12px;">

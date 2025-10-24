@@ -56,7 +56,7 @@ export class MainScene {
     const nav = renderNav('main');
     const bar = renderResourceBar();
     const view = html(`
-      <div class="container" style="color:#fff;">
+      <div class="container grid-2" style="color:#fff;">
         <div class="mine card fade-in">
           <div style="opacity:.9;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span data-ico="pick"></span>挖矿面板</div>
           <div style="height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;">

@@ -2,12 +2,16 @@ let injected = false;
 
 export function ensureGlobalStyles() {
   if (injected) return;
-  const css = `:root{--bg:#0b1020;--bg-2:#0f1530;--fg:#fff;--muted:rgba(255,255,255,.75);--grad:linear-gradient(135deg,#7B2CF5,#2C89F5);--panel-grad:linear-gradient(135deg,rgba(123,44,245,.25),rgba(44,137,245,.25));--glass:blur(10px);--glow:0 8px 20px rgba(0,0,0,.35),0 0 12px rgba(123,44,245,.7);--radius-sm:10px;--radius-md:12px;--radius-lg:16px;--ease:cubic-bezier(.22,.61,.36,1);--dur:.28s;--buy:#2C89F5;--sell:#E36414;--ok:#2ec27e;--warn:#f6c445;--danger:#ff5c5c;--rarity-common:#9aa0a6;--rarity-rare:#4fd4f5;--rarity-epic:#b26bff;--rarity-legendary:#f6c445}
-html,body{background:radial-gradient(1200px 600px at 50% -10%, rgba(123,44,245,.15), transparent),var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif}
+  const css = `:root{--bg:#0b1020;--bg-2:#0f1530;--fg:#fff;--muted:rgba(255,255,255,.75);--grad:linear-gradient(135deg,#7B2CF5,#2C89F5);--panel-grad:linear-gradient(135deg,rgba(123,44,245,.25),rgba(44,137,245,.25));--glass:blur(10px);--glow:0 8px 20px rgba(0,0,0,.35),0 0 12px rgba(123,44,245,.7);--radius-sm:10px;--radius-md:12px;--radius-lg:16px;--ease:cubic-bezier(.22,.61,.36,1);--dur:.28s;--buy:#2C89F5;--sell:#E36414;--ok:#2ec27e;--warn:#f6c445;--danger:#ff5c5c;--rarity-common:#9aa0a6;--rarity-rare:#4fd4f5;--rarity-epic:#b26bff;--rarity-legendary:#f6c445;--container-max:720px}
+html,body{background:radial-gradient(1200px 600px at 50% -10%, rgba(123,44,245,.12), transparent),var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif}
 html{color-scheme:dark}
 .container{padding:0 12px}
-.container{max-width:680px;margin:12px auto}
-.card{border-radius:var(--radius-lg);background:var(--panel-grad);backdrop-filter:var(--glass);box-shadow:var(--glow);padding:12px}
+.container{max-width:var(--container-max);margin:12px auto}
+.card{position:relative;border-radius:var(--radius-lg);background:var(--panel-grad);backdrop-filter:var(--glass);box-shadow:var(--glow);padding:12px;overflow:hidden}
+/* neon corners + sheen */
+.card::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(40% 25% at 100% 0, rgba(123,44,245,.18), transparent 60%),radial-gradient(35% 25% at 0 100%, rgba(44,137,245,.16), transparent 60%);pointer-events:none}
+.card::after{content:"";position:absolute;left:-30%;top:-120%;width:60%;height:300%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.18),transparent);transform:rotate(8deg);opacity:.25;animation:card-sheen 9s linear infinite}
+@keyframes card-sheen{0%{transform:translateX(0) rotate(8deg)}100%{transform:translateX(160%) rotate(8deg)}}
 .row{display:flex;gap:8px;align-items:center}
 .card input,.card button{box-sizing:border-box;outline:none}
 .card input{background:rgba(255,255,255,.08);border:0;border-radius:var(--radius-md);color:var(--fg);padding:10px;margin:8px 0;appearance:none;-webkit-appearance:none;background-clip:padding-box}
@@ -15,9 +19,12 @@ html{color-scheme:dark}
 .card select.input option, select.input option{background:#0b1020;color:#fff}
 .card select.input:focus, select.input:focus{outline:2px solid rgba(123,44,245,.45)}
 .card button{width:100%;border-radius:var(--radius-md)}
-.btn{padding:10px 14px;border:0;border-radius:var(--radius-md);color:#fff;transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+.btn{position:relative;overflow:hidden;padding:10px 14px;border:0;border-radius:var(--radius-md);color:#fff;transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease),filter var(--dur) var(--ease)}
 .btn .icon{margin-right:6px}
 .btn:active{transform:translateY(1px) scale(.99)}
+.btn::after{content:"";position:absolute;inset:0;opacity:0;background:linear-gradient(115deg,transparent,rgba(255,255,255,.25),transparent 55%);transform:translateX(-60%);transition:opacity var(--dur) var(--ease), transform var(--dur) var(--ease)}
+.btn:hover::after{opacity:.9;transform:translateX(0)}
+.btn:hover{filter:saturate(110%)}
 .btn-primary{background:var(--grad);box-shadow:var(--glow)}
 .btn-buy{background:var(--buy)}
 .btn-sell{background:var(--sell)}
@@ -45,10 +52,11 @@ html{color-scheme:dark}
 .list-item{display:flex;gap:8px;align-items:center;justify-content:space-between;background:rgba(255,255,255,.06);border-radius:var(--radius-md);padding:10px}
 .list-item--buy{border-left:3px solid var(--buy)}
 .list-item--sell{border-left:3px solid var(--sell)}
-.nav{max-width:480px;margin:12px auto 0;display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:10}
-.nav a{flex:1;display:flex;justify-content:center;align-items:center;gap:6px;text-align:center;padding:10px;border-radius:999px;text-decoration:none;color:#fff}
+.nav{max-width:var(--container-max);margin:12px auto 0;display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:40;padding:6px;border-radius:14px;background:linear-gradient(180deg,rgba(20,20,40,.45),rgba(20,20,40,.25));backdrop-filter:blur(10px) saturate(125%);border:1px solid rgba(255,255,255,.06)}
+.nav a{flex:1;display:flex;justify-content:center;align-items:center;gap:6px;text-align:center;padding:10px;border-radius:999px;text-decoration:none;color:#fff;transition:background var(--dur) var(--ease), transform var(--dur) var(--ease)}
 .nav a .ico{opacity:.95}
 .nav a.active{background:var(--grad);box-shadow:var(--glow)}
+.nav a:not(.active):hover{background:rgba(255,255,255,.06)}
 /* generic icon */
 .icon{display:inline-block;line-height:0;vertical-align:middle}
 .icon svg{display:block;filter:drop-shadow(0 0 8px rgba(123,44,245,.35))}
@@ -95,6 +103,23 @@ html{color-scheme:dark}
 .toast .life{position:absolute;left:0;bottom:0;height:2px;background:#7B2CF5;animation:toast-life var(--life,3.5s) linear forwards}
 @keyframes toast-life{from{width:100%}to{width:0}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:0ms!important}}
+
+/* responsive width + desktop grid layout for fullness */
+@media (min-width:900px){:root{--container-max:920px}}
+@media (min-width:1200px){:root{--container-max:1080px}}
+
+.container.grid-2{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:980px){
+  .container.grid-2{grid-template-columns:1fr 1fr;align-items:start}
+  .container.grid-2>.card:first-child{grid-column:1/-1}
+}
+
+/* decorative page overlays: aurora, grid lines, bottom glow */
+html::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;opacity:.035;background-image:linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);background-size:24px 24px}
+body::before{content:"";position:fixed;right:-10vw;top:-18vh;width:70vw;height:70vh;pointer-events:none;z-index:-1;filter:blur(50px);opacity:.55;background:radial-gradient(closest-side at 25% 40%, rgba(123,44,245,.35), transparent 65%), radial-gradient(closest-side at 70% 60%, rgba(44,137,245,.25), transparent 70%);mix-blend-mode:screen;animation:aurora-a 18s ease-in-out infinite alternate}
+body::after{content:"";position:fixed;left:-10vw;bottom:-22vh;width:120vw;height:60vh;pointer-events:none;z-index:-1;filter:blur(60px);opacity:.75;background:radial-gradient(120vw 60vh at 50% 100%, rgba(44,137,245,.22), transparent 65%), conic-gradient(from 200deg at 50% 75%, rgba(123,44,245,.18), rgba(44,137,245,.12), transparent 70%);mix-blend-mode:screen;animation:aurora-b 22s ease-in-out infinite alternate}
+@keyframes aurora-a{0%{transform:translateY(0)}100%{transform:translateY(14px)}}
+@keyframes aurora-b{0%{transform:translateY(0)}100%{transform:translateY(-12px)}}
 `;
   const style = document.createElement('style');
   style.setAttribute('data-ui', 'miner-game');
@@ -108,10 +133,21 @@ html{color-scheme:dark}
     if (!exists) {
       const cvs = document.createElement('canvas');
       cvs.setAttribute('data-stars', '');
-      cvs.style.cssText = 'position:fixed;inset:0;z-index:-1;opacity:.35;pointer-events:none;';
+      cvs.style.cssText = 'position:fixed;inset:0;z-index:-2;opacity:.40;pointer-events:none;';
       document.body.appendChild(cvs);
       const ctx = cvs.getContext('2d');
-      const stars = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random()*1.2+0.2, s: Math.random()*0.8+0.2 }));
+      const stars = Array.from({ length: 80 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random()*1.2+0.2, s: Math.random()*0.8+0.2 }));
+      type Meteor = { x: number; y: number; vx: number; vy: number; life: number; ttl: number };
+      const meteors: Meteor[] = [];
+      const spawnMeteor = () => {
+        const x = Math.random()*cvs.width*0.6 + cvs.width*0.2;
+        const y = -20; // from top
+        const speed = 3 + Math.random()*3;
+        const angle = Math.PI*0.8 + Math.random()*0.2; // diagonally
+        meteors.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, life: 0, ttl: 1200 + Math.random()*800 });
+      };
+      // gentle planets/orbs
+      const orbs = Array.from({ length: 2 }, () => ({ x: Math.random(), y: Math.random()*0.5 + 0.1, r: Math.random()*80 + 70, hue: Math.random() }));
       const fit = () => { cvs.width = window.innerWidth; cvs.height = window.innerHeight; };
       fit();
       window.addEventListener('resize', fit);
@@ -120,6 +156,20 @@ html{color-scheme:dark}
         if (!ctx) return;
         t += 0.016;
         ctx.clearRect(0,0,cvs.width,cvs.height);
+        // soft orbs
+        for (const ob of orbs) {
+          const x = ob.x * cvs.width, y = ob.y * cvs.height;
+          const pulse = (Math.sin(t*0.6 + x*0.0015)*0.5+0.5)*0.12;
+          const rad = ob.r * (1+pulse);
+          const grad = ctx.createRadialGradient(x, y, 0, x, y, rad);
+          grad.addColorStop(0, 'rgba(110,80,255,0.10)');
+          grad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(x, y, rad, 0, Math.PI*2);
+          ctx.fill();
+        }
+        // stars twinkle
         for (const st of stars) {
           const x = st.x * cvs.width, y = st.y * cvs.height;
           const tw = (Math.sin(t*1.6 + x*0.002 + y*0.003)*0.5+0.5)*0.5+0.5;
@@ -127,6 +177,25 @@ html{color-scheme:dark}
           ctx.arc(x, y, st.r + tw*0.6, 0, Math.PI*2);
           ctx.fillStyle = 'rgba(180,200,255,0.6)';
           ctx.fill();
+        }
+        // meteors
+        if (Math.random() < 0.015 && meteors.length < 2) spawnMeteor();
+        for (let i=meteors.length-1; i>=0; i--) {
+          const m = meteors[i];
+          m.x += m.vx; m.y += m.vy; m.life += 16;
+          // trail
+          const trail = ctx.createLinearGradient(m.x, m.y, m.x - m.vx*8, m.y - m.vy*8);
+          trail.addColorStop(0, 'rgba(255,255,255,0.9)');
+          trail.addColorStop(1, 'rgba(150,180,255,0)');
+          ctx.strokeStyle = trail;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(m.x - m.vx*10, m.y - m.vy*10);
+          ctx.lineTo(m.x, m.y);
+          ctx.stroke();
+          if (m.y > cvs.height + 40 || m.x < -40 || m.x > cvs.width + 40 || m.life > m.ttl) {
+            meteors.splice(i,1);
+          }
         }
         requestAnimationFrame(loop);
       };
