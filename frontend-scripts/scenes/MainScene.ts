@@ -6,6 +6,7 @@ import { renderResourceBar } from '../components/ResourceBar';
 import { showToast } from '../components/Toast';
 import { spawnFloatText } from '../components/FloatText';
 import { renderIcon } from '../components/Icon';
+import { showAdDialog } from '../components/AdDialog';
 
 type MineStatus = {
   cartAmount: number;
@@ -186,6 +187,19 @@ export class MainScene {
         this.clearCollapseTimer();
       }
       this.updateProgress();
+      
+      // 碎片获得提示
+      if (msg.fragment) {
+        const fragmentNames: Record<string, string> = {
+          miner: '矿机碎片',
+          cart: '矿车碎片',
+          raider: '掠夺器碎片',
+          shield: '防御盾碎片',
+        };
+        showToast(`💎 获得 ${fragmentNames[msg.fragment.type] || '碎片'} x${msg.fragment.amount}`, 'success');
+        this.logEvent(`获得碎片：${fragmentNames[msg.fragment.type]} x${msg.fragment.amount}`);
+      }
+      
       if (msg.type === 'critical' && msg.amount) {
         this.setStatusMessage(`触发暴击，矿车增加 ${msg.amount}！`);
         this.logEvent(`暴击 +${msg.amount}`);
@@ -214,6 +228,14 @@ export class MainScene {
       showToast(`被掠夺：来自 ${msg.attacker}，损失 ${msg.loss}`, 'warn');
       this.logEvent(`被 ${msg.attacker} 掠夺 -${msg.loss}`);
     };
+
+    // 全服广播监听
+    RealtimeClient.I.on('global.announcement', (msg) => {
+      if (msg.type === 'upgrade') {
+        showToast(`📢 ${msg.message}`, 'success');
+        this.logEvent(`[全服] ${msg.message}`);
+      }
+    });
 
     RealtimeClient.I.on('mine.update', this.mineUpdateHandler);
     RealtimeClient.I.on('mine.collapse', this.mineCollapseHandler);
@@ -259,6 +281,24 @@ export class MainScene {
 
   private async handleCollect(updateBar: () => Promise<void>) {
     if (this.pending || this.cartAmt <= 0) return;
+    
+    // 检查VIP状态
+    try {
+      const vipStatus = await NetworkManager.I.request<{ isVip: boolean }>('/user/vip-status');
+      if (!vipStatus.isVip) {
+        // 非VIP，显示广告
+        const watched = await showAdDialog();
+        if (!watched) {
+          // 用户跳过广告，不收矿
+          showToast('已跳过广告，收矿取消', 'warn');
+          return;
+        }
+      }
+    } catch (e: any) {
+      console.warn('VIP status check failed:', e);
+      // 如果检查失败，允许继续（降级处理）
+    }
+    
     this.pending = 'collect';
     this.updateControls();
     try {

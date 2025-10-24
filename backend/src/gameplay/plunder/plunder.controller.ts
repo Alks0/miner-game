@@ -12,6 +12,11 @@ export class PlunderController {
     return this.plunder.targets(req.user.sub);
   }
 
+  @Get('revenge-list')
+  revengeList(@Req() req: any) {
+    return this.plunder.getRevengeList(req.user.sub);
+  }
+
   @Post(':defenderId')
   execute(@Req() req: any, @Param('defenderId') defenderId: string) {
     return this.plunder.execute(req.user.sub, defenderId);

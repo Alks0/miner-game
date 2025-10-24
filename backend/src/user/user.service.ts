@@ -8,6 +8,8 @@ export interface UserEntity {
   nickname?: string;
   oreAmount: number;
   bbCoins: number;
+  isVip: boolean;
+  vipExpireAt?: number;
 }
 
 @Injectable()
@@ -21,10 +23,39 @@ export class UserService {
     }
     const id = `u_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const passwordHash = await bcrypt.hash(password, 10);
-    const user: UserEntity = { id, username, passwordHash, nickname: username, oreAmount: 0, bbCoins: 0 };
+    const user: UserEntity = { 
+      id, 
+      username, 
+      passwordHash, 
+      nickname: username, 
+      oreAmount: 0, 
+      bbCoins: 0,
+      isVip: false,
+    };
     this.usersById.set(id, user);
     this.usersByName.set(username, user);
     return user;
+  }
+
+  // 检查是否VIP
+  isVip(userId: string): boolean {
+    const user = this.usersById.get(userId);
+    if (!user || !user.isVip) return false;
+    if (user.vipExpireAt && Date.now() > user.vipExpireAt) {
+      user.isVip = false;
+      return false;
+    }
+    return true;
+  }
+
+  // 设置VIP（duration为秒数，0表示永久）
+  setVip(userId: string, durationSeconds: number = 0): void {
+    const user = this.usersById.get(userId);
+    if (!user) return;
+    user.isVip = true;
+    if (durationSeconds > 0) {
+      user.vipExpireAt = Date.now() + durationSeconds * 1000;
+    }
   }
 
   async validateUser(username: string, password: string): Promise<UserEntity | null> {
@@ -38,6 +69,11 @@ export class UserService {
     const user = this.usersById.get(id);
     if (!user) throw new NotFoundException('用户不存在');
     return user;
+  }
+
+  // 同步版本（用于非async场景）
+  findByIdSync(id: string): UserEntity | undefined {
+    return this.usersById.get(id);
   }
 
   async updateNickname(id: string, nickname: string): Promise<void> {
@@ -93,6 +129,7 @@ export class UserService {
       nickname: username,
       oreAmount: 0,
       bbCoins: 0,
+      isVip: false,
     };
     this.usersById.set(user.id, user);
     this.usersByName.set(user.username, user);

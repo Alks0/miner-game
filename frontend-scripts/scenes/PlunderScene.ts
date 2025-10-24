@@ -22,6 +22,12 @@ export class PlunderScene {
             <h3 style="margin:0;display:flex;align-items:center;gap:8px;"><span data-ico="sword"></span>掠夺目标</h3>
             <button id="refresh" class="btn btn-primary"><span data-ico="refresh"></span>刷新</button>
           </div>
+          <div style="margin-top:12px;">
+            <details>
+              <summary style="color:#ff5c5c;"><span data-ico="target"></span>复仇列表</summary>
+              <div id="revenge" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;"></div>
+            </details>
+          </div>
           <div id="list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;"></div>
           <div id="result" style="margin-top:12px;opacity:.9;font-family:monospace;"></div>
         </div>
@@ -39,6 +45,7 @@ export class PlunderScene {
     this.resultBox = qs(view, '#result');
 
     const list = qs(view, '#list');
+    const revengeList = qs(view, '#revenge');
     const refreshBtn = qs<HTMLButtonElement>(view, '#refresh');
     const mountIcons = (rootEl: Element) => {
       rootEl.querySelectorAll('[data-ico]')
@@ -55,9 +62,73 @@ export class PlunderScene {
       mountIcons(refreshBtn);
       await bar.update();
       list.innerHTML = '';
+      revengeList.innerHTML = '';
       for (let i = 0; i < 3; i++) list.appendChild(html('<div class="skeleton"></div>'));
       try {
-        const data = await NetworkManager.I.request<{ targets: any[] }>('/plunder/targets');
+        const [data, revengeData] = await Promise.all([
+          NetworkManager.I.request<{ targets: any[] }>('/plunder/targets'),
+          NetworkManager.I.request<{ revenges: any[] }>('/plunder/revenge-list').catch(() => ({ revenges: [] }))
+        ]);
+        
+        // 渲染复仇列表
+        revengeList.innerHTML = '';
+        if (revengeData.revenges && revengeData.revenges.length > 0) {
+          for (const target of revengeData.revenges) {
+            const row = html(`
+              <div class="list-item list-item--sell" style="border-color:#ff5c5c;">
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <div style="display:flex;align-items:center;gap:6px;color:#ff5c5c;"><span data-ico="target"></span><strong>${target.username || target.id}</strong> 👹 仇人</div>
+                  <div style="opacity:.85;">矿石：${target.ore} <span class="pill">复仇掠夺不受冷却限制</span></div>
+                </div>
+                <div>
+                  <button class="btn btn-sell" data-id="${target.id}"><span data-ico="sword"></span>复仇</button>
+                </div>
+              </div>
+            `);
+            mountIcons(row);
+            row.addEventListener('click', async (ev) => {
+              const el = ev.target as HTMLButtonElement;
+              const id = el.getAttribute('data-id');
+              if (!id) return;
+              const btn = el.closest('button') as HTMLButtonElement;
+              if (!btn) return;
+              
+              btn.disabled = true;
+              const originalHTML = btn.innerHTML;
+              btn.innerHTML = '<span data-ico="sword"></span>复仇中…';
+              mountIcons(btn);
+              
+              let shouldRefresh = false;
+              try {
+                const res = await NetworkManager.I.request<{ success: boolean; loot_amount: number }>(`/plunder/${id}`, { method: 'POST' });
+                if (res.success) {
+                  this.log(`复仇成功，获得 ${res.loot_amount}`);
+                  showToast(`⚔️ 复仇成功！获得 ${res.loot_amount} 矿石`, 'success');
+                  shouldRefresh = true;
+                } else {
+                  this.log(`复仇失败`);
+                  showToast('复仇失败', 'warn');
+                }
+                await bar.update();
+              } catch (e: any) {
+                const message = e?.message || '复仇失败';
+                this.log(`复仇失败：${message}`);
+                showToast(message, 'error');
+                btn.innerHTML = originalHTML;
+                mountIcons(btn);
+              } finally {
+                btn.disabled = false;
+                if (shouldRefresh) {
+                  await load();
+                }
+              }
+            });
+            revengeList.appendChild(row);
+          }
+        } else {
+          revengeList.innerHTML = '<div style="opacity:.8;text-align:center;padding:10px;">暂无可复仇的对象</div>';
+        }
+        
         list.innerHTML = '';
         if (!data.targets.length) {
           list.appendChild(html('<div style="opacity:.8;">暂无可掠夺的目标，稍后再试</div>'));

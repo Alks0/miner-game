@@ -22,6 +22,10 @@ export class WarehouseScene {
           </div>
           <div style="margin-top:12px;">
             <details open>
+              <summary><span data-ico="ore"></span>碎片仓库</summary>
+              <div id="fragments" style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;"></div>
+            </details>
+            <details open>
               <summary><span data-ico="box"></span>我的道具</summary>
               <div id="list" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;"></div>
             </details>
@@ -40,6 +44,7 @@ export class WarehouseScene {
 
     const list = qs(view, '#list');
     const tplContainer = qs(view, '#tpls');
+    const fragmentsContainer = qs(view, '#fragments');
     const refreshBtn = qs<HTMLButtonElement>(view, '#refresh');
 
     const mountIcons = (rootEl: Element) => {
@@ -78,12 +83,68 @@ export class WarehouseScene {
       list.innerHTML = '';
       for (let i = 0; i < 3; i++) list.appendChild(html('<div class="skeleton"></div>'));
       try {
-        const [data, tpls] = await Promise.all([
+        const [data, tpls, fragmentsData] = await Promise.all([
           NetworkManager.I.request<{ items: any[] }>('/items'),
-          NetworkManager.I.request<{ templates: any[] }>('/items/templates').catch(() => ({ templates: [] }))
+          NetworkManager.I.request<{ templates: any[] }>('/items/templates').catch(() => ({ templates: [] })),
+          NetworkManager.I.request<{ fragments: Record<string, number> }>('/items/fragments').catch(() => ({ fragments: {} }))
         ]);
         const tplById: Record<string, any> = {};
         for (const t of (tpls.templates || [])) tplById[t.id] = t;
+        
+        // 渲染碎片
+        const fragments = fragmentsData.fragments || {};
+        fragmentsContainer.innerHTML = '';
+        const fragmentNames: Record<string, string> = {
+          miner: '矿机碎片',
+          cart: '矿车碎片',
+          raider: '掠夺器碎片',
+          shield: '防御盾碎片',
+        };
+        for (const [type, count] of Object.entries(fragments)) {
+          const canCraft = count >= 50;
+          const card = html(`
+            <div class="fragment-card ${canCraft ? 'can-craft' : ''}">
+              <div class="fragment-icon" data-ico="ore"></div>
+              <div class="fragment-info">
+                <div class="fragment-name">${fragmentNames[type] || type}</div>
+                <div class="fragment-count">${count} / 50</div>
+              </div>
+              <button class="btn btn-primary btn-sm" data-craft="${type}" ${canCraft ? '' : 'disabled'}><span data-ico="wrench"></span>合成</button>
+            </div>
+          `);
+          mountIcons(card);
+          
+          // 合成按钮点击事件
+          const craftBtn = card.querySelector('[data-craft]') as HTMLButtonElement;
+          craftBtn?.addEventListener('click', async () => {
+            if (craftBtn.disabled) return;
+            
+            craftBtn.disabled = true;
+            const originalHTML = craftBtn.innerHTML;
+            craftBtn.innerHTML = '<span data-ico="wrench"></span>合成中…';
+            mountIcons(craftBtn);
+            
+            try {
+              const res = await NetworkManager.I.request<{ item: any }>('/items/craft', {
+                method: 'POST',
+                body: JSON.stringify({ fragmentType: type }),
+              });
+              showToast(`合成成功！获得 ${fragmentNames[type]}`, 'success');
+              card.classList.add('upgrade-success');
+              setTimeout(() => card.classList.remove('upgrade-success'), 1000);
+              await load();
+            } catch (e: any) {
+              showToast(e?.message || '合成失败', 'error');
+              craftBtn.innerHTML = originalHTML;
+              mountIcons(craftBtn);
+            } finally {
+              craftBtn.disabled = false;
+            }
+          });
+          
+          fragmentsContainer.appendChild(card);
+        }
+        
         list.innerHTML = '';
         if (!data.items.length) {
           list.appendChild(html('<div style="opacity:.8;">暂无道具，尝试多挖矿或掠夺以获取更多资源</div>'));
@@ -93,27 +154,32 @@ export class WarehouseScene {
           const rarity = getRarity(item, tpl);
           const name = (tpl && (tpl.name || tpl.id)) || item.templateId;
 
+          // 计算升级成功率
+          const successRate = Math.max(0.4, 0.8 - (item.level - 1) * 0.02);
+          const successPct = Math.round(successRate * 100);
+          
           const row = html(`
             <div class="item-card hover-lift ${
               rarity.key === 'legendary' ? 'rarity-outline-legendary' : rarity.key === 'epic' ? 'rarity-outline-epic' : rarity.key === 'rare' ? 'rarity-outline-rare' : 'rarity-outline-common'
             }" data-rarity="${rarity.key}">
               <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px;">
-                <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
+                <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;">
                   <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
                     <strong style="font-size:15px;white-space:nowrap;display:flex;align-items:center;gap:6px;"><span data-ico="ore"></span>${name}</strong>
                     <span class="badge rarity-${rarity.key}"><i></i>${rarity.text}</span>
-                    ${item.isEquipped ? '<span class="pill">已装备</span>' : ''}
+                    ${item.isEquipped ? '<span class="pill pill-running">已装备</span>' : ''}
                     ${item.isListed ? '<span class="pill">挂单中</span>' : ''}
                   </div>
-                  <div style="opacity:.85;display:flex;flex-wrap:wrap;gap:8px;">
+                  ${tpl?.description ? `<div style="opacity:.75;font-size:13px;font-style:italic;">${tpl.description}</div>` : ''}
+                  <div style="opacity:.85;display:flex;flex-wrap:wrap;gap:8px;font-size:13px;">
                     <span>等级 Lv.${item.level}</span>
+                    ${tpl?.baseEffect ? `<span class="pill">基础效果 ${tpl.baseEffect}</span>` : ''}
                     <span class="pill">实例 ${item.id}</span>
-                    ${tpl?.category ? `<span class="pill">${tpl.category}</span>` : ''}
                   </div>
                 </div>
                 <div class="actions">
                   <button class="btn ${item.isEquipped ? 'btn-sell' : 'btn-buy'}" data-act="${item.isEquipped ? 'unequip' : 'equip'}" data-id="${item.id}"><span data-ico="${item.isEquipped ? 'x' : 'shield'}"></span>${item.isEquipped ? '卸下' : '装备'}</button>
-                  <button class="btn btn-primary" data-act="upgrade" data-id="${item.id}" title="消耗 ${item.level * 50} 矿石"><span data-ico="wrench"></span>升级 (${item.level * 50})</button>
+                  <button class="btn btn-primary" data-act="upgrade" data-id="${item.id}" title="消耗 ${item.level * 50} 矿石，成功率 ${successPct}%"><span data-ico="wrench"></span>升级 (${item.level * 50}) ${successPct}%</button>
                   <button class="btn btn-ghost" data-act="toggle" data-id="${item.id}"><span data-ico="list"></span>详情</button>
                 </div>
               </div>
@@ -211,7 +277,20 @@ export class WarehouseScene {
 
         tplContainer.innerHTML = '';
         for (const tpl of (tpls.templates || [])) {
-          const row = html(`<div class="list-item"><strong>${tpl.name || tpl.id}</strong> · ${tpl.category || '未知类型'}</div>`);
+          const rarityText = tpl.rarity === 'legendary' ? '传说' : tpl.rarity === 'epic' ? '史诗' : tpl.rarity === 'rare' ? '稀有' : '普通';
+          const categoryText = tpl.category === 'miner' ? '矿机' : tpl.category === 'cart' ? '矿车' : tpl.category === 'raider' ? '掠夺器' : '防御盾';
+          const row = html(`
+            <div class="list-item">
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <strong>${tpl.name || tpl.id}</strong>
+                  <span class="badge rarity-${tpl.rarity}"><i></i>${rarityText}</span>
+                </div>
+                <div style="opacity:.75;font-size:12px;">${tpl.description || ''}</div>
+                <div style="opacity:.65;font-size:12px;">类型：${categoryText} · 基础效果：${tpl.baseEffect}</div>
+              </div>
+            </div>
+          `);
           tplContainer.appendChild(row);
         }
       } catch (e: any) {

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { NotificationService } from '../../notification/notification.service';
 import { UserService } from '../../user/user.service';
 import { ItemService } from '../../item/item.service';
+import { FragmentService, FragmentType } from '../../item/fragment.service';
 import { RankingService } from '../../ranking/ranking.service';
 
 interface UserMineState {
@@ -20,6 +21,7 @@ export class MineService {
     private readonly notification: NotificationService,
     private readonly users: UserService,
     private readonly items: ItemService,
+    private readonly fragments: FragmentService,
     private readonly ranking: RankingService,
   ) {}
 
@@ -53,9 +55,11 @@ export class MineService {
   }
 
   private refreshStateFromEquipment(userId: string, state: UserMineState) {
-    const { minerLevel, cartLevel } = this.items.getEquippedLevels(userId);
-    const newIntervalMs = Math.max(1000, 3000 - (minerLevel - 1) * 100);
-    const newCartCapacity = 1000 + (cartLevel - 1) * 500;
+    const equipped = this.items.getEquippedLevels(userId);
+    // 使用新的效果值系统
+    // 挖矿间隔 = 基础3000ms - (矿机效果值)
+    const newIntervalMs = Math.max(1000, 3000 - Math.floor(equipped.minerEffect * 10));
+    const newCartCapacity = Math.floor(equipped.cartCapacity);
     
     // 如果周期变化，重启计时器
     if (state.intervalMs !== newIntervalMs && state.timer) {
@@ -108,7 +112,18 @@ export class MineService {
     const gain = Math.min(space, amount);
     state.cartAmount += gain;
     
-    console.log(`[MineService] Produced for ${userId}: type=${type}, amount=${gain}, cart=${state.cartAmount}/${state.cartCapacity}`);
+    // 10%概率产出碎片（暴击时概率翻倍）
+    let fragmentGained: { type: FragmentType; amount: number } | null = null;
+    const fragmentChance = type === 'critical' ? 0.2 : 0.1;
+    if (Math.random() < fragmentChance && type !== 'collapse') {
+      const fragmentTypes: FragmentType[] = ['miner', 'cart', 'raider', 'shield'];
+      const randomType = fragmentTypes[Math.floor(Math.random() * fragmentTypes.length)];
+      const fragmentAmount = type === 'critical' ? 3 : 1;
+      this.fragments.addFragment(userId, randomType, fragmentAmount);
+      fragmentGained = { type: randomType, amount: fragmentAmount };
+    }
+    
+    console.log(`[MineService] Produced for ${userId}: type=${type}, amount=${gain}, cart=${state.cartAmount}/${state.cartCapacity}, fragment=${fragmentGained ? `${fragmentGained.type} x${fragmentGained.amount}` : 'none'}`);
     
     this.notification.emitToUser(userId, 'mine.update', {
       type,
@@ -118,6 +133,7 @@ export class MineService {
       collapsed: false,
       collapsedRemaining: 0,
       running: Boolean(state.timer),
+      fragment: fragmentGained,
     });
   }
 
@@ -166,9 +182,9 @@ export class MineService {
   private ensureState(userId: string): UserMineState {
     let state = this.userState.get(userId);
     if (!state) {
-      const { minerLevel, cartLevel } = this.items.getEquippedLevels(userId);
-      const intervalMs = Math.max(1000, 3000 - (minerLevel - 1) * 100);
-      const cartCapacity = 1000 + (cartLevel - 1) * 500;
+      const equipped = this.items.getEquippedLevels(userId);
+      const intervalMs = Math.max(1000, 3000 - Math.floor(equipped.minerEffect * 10));
+      const cartCapacity = Math.floor(equipped.cartCapacity);
       state = { intervalMs, cartAmount: 0, cartCapacity };
       this.userState.set(userId, state);
     }
