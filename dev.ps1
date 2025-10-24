@@ -31,11 +31,20 @@ if ($KillExisting) {
 if ($Rebuild) {
   $es = Join-Path $PSScriptRoot 'node_modules/.bin/esbuild.cmd'
   if (-not (Test-Path $es)) { Write-Host '[dev] Installing esbuild...' -ForegroundColor Yellow; npm i -D esbuild | Out-Null }
+  Write-Host '[dev] Rebuilding frontend...' -ForegroundColor Yellow
   & $es "$(Join-Path $PSScriptRoot 'frontend-scripts/App.ts')" --bundle --format=iife --platform=browser --target=es2018 --sourcemap --outfile="$(Join-Path $PSScriptRoot 'web/app.js')"
   if ($LASTEXITCODE -ne 0) { Write-Error '[dev] esbuild failed'; exit 1 }
   Write-Host '[dev] Build complete: web/app.js' -ForegroundColor Green
 }
 
-if ($Open) { Start-Process "http://localhost:$Port/" }
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host " Frontend: http://localhost:$Port" -ForegroundColor Green
+Write-Host " Backend:  http://localhost:${BackendPort}" -ForegroundColor Green  
+Write-Host " Watch:    Auto-rebuild enabled" -ForegroundColor Yellow
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+
+if ($Open) { Start-Process "http://localhost:$Port" }
 
 node dev-server.js
