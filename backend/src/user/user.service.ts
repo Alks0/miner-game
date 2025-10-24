@@ -84,7 +84,8 @@ export class UserService {
     const existing = this.usersById.get(payload.sub);
     if (existing) return existing;
     const username = payload.username || `player_${payload.sub.slice(-6)}`;
-    const passwordHash = await bcrypt.hash('placeholder', 6);
+    // 使用安全的哈希轮数
+    const passwordHash = await bcrypt.hash('placeholder', 10);
     const user: UserEntity = {
       id: payload.sub,
       username,

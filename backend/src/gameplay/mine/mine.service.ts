@@ -25,6 +25,8 @@ export class MineService {
 
   start(userId: string) {
     const state = this.ensureState(userId);
+    // 先刷新状态以获取最新装备数据
+    this.refreshStateFromEquipment(userId, state);
     if (!state.timer) {
       state.timer = setInterval(() => this.produceOnce(userId), state.intervalMs);
     }
@@ -38,6 +40,34 @@ export class MineService {
       state.timer = undefined;
     }
     return this.buildStatus(state);
+  }
+
+  // 用户离线时清理资源
+  cleanup(userId: string) {
+    const state = this.userState.get(userId);
+    if (state?.timer) {
+      clearInterval(state.timer);
+      state.timer = undefined;
+    }
+  }
+
+  private refreshStateFromEquipment(userId: string, state: UserMineState) {
+    const { minerLevel, cartLevel } = this.items.getEquippedLevels(userId);
+    const newIntervalMs = Math.max(1000, 3000 - (minerLevel - 1) * 100);
+    const newCartCapacity = 1000 + (cartLevel - 1) * 500;
+    
+    // 如果周期变化，重启计时器
+    if (state.intervalMs !== newIntervalMs && state.timer) {
+      clearInterval(state.timer);
+      state.timer = setInterval(() => this.produceOnce(userId), newIntervalMs);
+    }
+    
+    state.intervalMs = newIntervalMs;
+    state.cartCapacity = newCartCapacity;
+    // 防止容量缩小导致超出
+    if (state.cartAmount > state.cartCapacity) {
+      state.cartAmount = state.cartCapacity;
+    }
   }
 
   private produceOnce(userId: string) {
@@ -92,9 +122,15 @@ export class MineService {
   collect(userId: string) {
     const state = this.ensureState(userId);
     const collected = state.cartAmount;
+    
+    // 防止重复收集
+    if (collected <= 0) {
+      return { collected: 0, status: this.buildStatus(state) };
+    }
+    
     state.cartAmount = 0;
-    if (collected > 0) this.users.addResource(userId, 'ore', collected);
-    if (collected > 0) this.ranking.addScore(userId, collected);
+    this.users.addResource(userId, 'ore', collected);
+    this.ranking.addScore(userId, collected);
     this.notification.emitToUser(userId, 'mine.update', {
       type: 'collect',
       amount: 0,

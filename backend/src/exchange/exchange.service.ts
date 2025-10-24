@@ -33,6 +33,7 @@ export class ExchangeService {
 
   async placeBuy(userId: string, itemTemplateId: string, price: number, amount: number) {
     if (amount <= 0 || price <= 0) throw new BadRequestException('参数错误');
+    if (!itemTemplateId) throw new BadRequestException('模板ID不能为空');
     const total = price * amount;
     const ok = await this.users.consumeResource(userId, 'coin', total);
     if (!ok) throw new BadRequestException('BB币不足');
@@ -96,15 +97,23 @@ export class ExchangeService {
   private executeTrade(buy: Order, sell: Order) {
     const tradeAmount = Math.min(buy.amount, sell.amount);
     if (tradeAmount <= 0) return;
+    
     // 转移道具（sell 实例 → buy 用户）
     this.items.transferItemInstance(sell.userId, buy.userId, sell.itemInstanceId!);
-    // 资金结算：把多余币退回买家，把卖家拿到成交价
+    
+    // 资金结算：卖家获得成交价
     const total = sell.price * tradeAmount;
     this.users.addResource(sell.userId, 'coin', total);
-    // 买单消耗的币与价格差异在挂单时已扣除，这里按需要可以退差价，内存版从简不退差
+    
+    // 退还买家的差价（买单价格 - 成交价）
+    if (buy.price > sell.price) {
+      const refund = (buy.price - sell.price) * tradeAmount;
+      this.users.addResource(buy.userId, 'coin', refund);
+    }
 
     buy.amount -= tradeAmount;
     sell.amount -= tradeAmount;
+    
     if (sell.amount <= 0) {
       // 卖单完成，解除锁定并从订单簿移除
       this.removeOrder(sell.id);
@@ -118,9 +127,18 @@ export class ExchangeService {
     const idx = this.orders.findIndex(o => o.id === orderId);
     if (idx >= 0) {
       const o = this.orders[idx];
+      
+      // 卖单：解锁道具
       if (o.type === 'sell' && o.itemInstanceId) {
         this.items.unlockItem(o.userId, o.itemInstanceId);
       }
+      
+      // 买单：退还剩余资金
+      if (o.type === 'buy' && o.amount > 0) {
+        const refund = o.price * o.amount;
+        this.users.addResource(o.userId, 'coin', refund);
+      }
+      
       this.orders.splice(idx, 1);
     }
   }

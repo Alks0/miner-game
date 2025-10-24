@@ -23,9 +23,17 @@ export class PlunderService {
   }
 
   async execute(attackerId: string, defenderId: string) {
+    // 防止自己掠夺自己
+    if (attackerId === defenderId) {
+      throw new BadRequestException('不能掠夺自己');
+    }
+    
     const now = Date.now();
     const cd = this.cooldown.get(attackerId) || 0;
-    if (cd > now) throw new BadRequestException('掠夺器冷却中');
+    if (cd > now) {
+      const remainingSeconds = Math.ceil((cd - now) / 1000);
+      throw new BadRequestException(`掠夺器冷却中，剩余 ${remainingSeconds} 秒`);
+    }
 
     const attacker = await this.users.findById(attackerId);
     const defender = await this.users.findById(defenderId);

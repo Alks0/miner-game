@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 
 export type ItemCategory = 'miner' | 'cart' | 'raider' | 'shield';
@@ -104,13 +104,26 @@ export class ItemService {
   }
 
   transferItemInstance(sellerId: string, buyerId: string, itemId: string) {
+    // 验证卖家和买家不是同一个人
+    if (sellerId === buyerId) {
+      throw new BadRequestException('不能将道具转移给自己');
+    }
+    
     const sellerItems = this.listUserItems(sellerId);
     const idx = sellerItems.findIndex(i => i.id === itemId);
     if (idx < 0) throw new NotFoundException('道具不存在');
+    
     const inst = sellerItems[idx];
+    
+    // 确保道具没有被装备
+    if (inst.isEquipped) {
+      throw new BadRequestException('已装备的道具无法转移');
+    }
+    
     sellerItems.splice(idx, 1);
     inst.isListed = false;
     inst.isEquipped = false;
+    
     const buyerItems = this.userItems.get(buyerId) || [];
     buyerItems.push(inst);
     this.userItems.set(buyerId, buyerItems);
