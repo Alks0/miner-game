@@ -32,8 +32,14 @@ function routeTo(container: HTMLElement) {
 }
 
 export async function bootstrap(container: HTMLElement) {
+  // 立即注入样式，避免FOUC（闪烁）
   ensureGlobalStyles();
-  routeTo(container);
+  
+  // 使用 requestAnimationFrame 确保样式已应用
+  requestAnimationFrame(() => {
+    routeTo(container);
+  });
+  
   window.onhashchange = () => routeTo(container);
 }
 

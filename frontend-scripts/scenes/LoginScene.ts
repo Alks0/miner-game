@@ -27,10 +27,27 @@ export class LoginScene {
     root.innerHTML = '';
     root.appendChild(view);
 
+    // 渲染所有图标
+    try {
+      view.querySelectorAll('[data-ico]').forEach((el) => {
+        const name = (el as HTMLElement).getAttribute('data-ico') as any;
+        try {
+          el.appendChild(renderIcon(name, { size: 22 }));
+        } catch {}
+      });
+    } catch {}
+
     const uEl = qs<HTMLInputElement>(view, '#u');
     const pEl = qs<HTMLInputElement>(view, '#p');
     const go = qs<HTMLButtonElement>(view, '#go');
     const reveal = qs<HTMLButtonElement>(view, '#reveal');
+
+    // 使用 requestAnimationFrame 确保渲染完成后立即聚焦
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        uEl.focus();
+      });
+    });
 
     const submit = async () => {
       const username = (uEl.value || '').trim();
@@ -64,11 +81,3 @@ export class LoginScene {
     };
   }
 }
-    // mount icons
-    try {
-      view.querySelectorAll('[data-ico]')
-        .forEach((el) => {
-          const name = (el as HTMLElement).getAttribute('data-ico') as any;
-          try { el.appendChild(renderIcon(name, { size: 22 })); } catch {}
-        });
-    } catch {}
