@@ -9,19 +9,29 @@ export function renderResourceBar() {
   card.className = 'card fade-in';
   card.innerHTML = `
     <div class="stats">
-      <div class="stat" id="ore-stat">
+      <div class="stat stat-animated" id="ore-stat">
         <div class="ico" data-ico="ore"></div>
         <div style="display:flex;flex-direction:column;gap:2px;">
           <div class="val" id="ore">0</div>
           <div class="label">矿石</div>
         </div>
+        <svg class="stat-particles" width="100%" height="100%" viewBox="0 0 100 50" style="position:absolute;inset:0;pointer-events:none;">
+          <circle class="stat-particle sp1" cx="20" cy="25" r="1.5" fill="#7B2CF5" opacity="0"/>
+          <circle class="stat-particle sp2" cx="50" cy="25" r="1" fill="#2C89F5" opacity="0"/>
+          <circle class="stat-particle sp3" cx="80" cy="25" r="1.5" fill="#f6c445" opacity="0"/>
+        </svg>
       </div>
-      <div class="stat" id="coin-stat">
+      <div class="stat stat-animated" id="coin-stat">
         <div class="ico" data-ico="coin"></div>
         <div style="display:flex;flex-direction:column;gap:2px;">
           <div class="val" id="coin">0</div>
           <div class="label">BB</div>
         </div>
+        <svg class="stat-particles" width="100%" height="100%" viewBox="0 0 100 50" style="position:absolute;inset:0;pointer-events:none;">
+          <circle class="stat-particle sp1" cx="20" cy="25" r="1.5" fill="#f6c445" opacity="0"/>
+          <circle class="stat-particle sp2" cx="50" cy="25" r="1" fill="#ffd700" opacity="0"/>
+          <circle class="stat-particle sp3" cx="80" cy="25" r="1.5" fill="#e36414" opacity="0"/>
+        </svg>
       </div>
     </div>
   `;

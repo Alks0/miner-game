@@ -6,6 +6,7 @@ import { GameManager } from '../core/GameManager';
 import { showToast } from '../components/Toast';
 import { renderResourceBar } from '../components/ResourceBar';
 import { renderIcon } from '../components/Icon';
+import { createSpinningCoin } from '../components/AnimatedIcons';
 
 type Order = {
   id: string;
@@ -32,7 +33,7 @@ export class ExchangeScene {
     const view = html(`
       <div class="container grid-2" style="color:#fff;">
         <div class="card fade-in">
-          <h3 style="margin:0 0 12px;display:flex;align-items:center;gap:8px;"><span data-ico="exchange"></span>市场下单</h3>
+          <h3 style="margin:0 0 12px;display:flex;align-items:center;gap:8px;"><span data-ico="exchange"></span>市场下单 <span id="coinAnim"></span></h3>
           <div class="row" style="flex-wrap:wrap;align-items:flex-end;gap:12px;">
             <div style="flex:1;min-width:180px;">
               <label style="display:flex;align-items:center;gap:6px;"><span data-ico="list"></span>购买模板</label>
@@ -118,6 +119,12 @@ export class ExchangeScene {
         });
     };
     mountIcons(view);
+    
+    // 添加金币动画
+    const coinSlot = view.querySelector('#coinAnim');
+    if (coinSlot) {
+      coinSlot.appendChild(createSpinningCoin());
+    }
 
     let prevIds = new Set<string>();
     let refreshing = false;

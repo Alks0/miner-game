@@ -7,6 +7,8 @@ import { showToast } from '../components/Toast';
 import { spawnFloatText } from '../components/FloatText';
 import { renderIcon } from '../components/Icon';
 import { showAdDialog } from '../components/AdDialog';
+import { createMinerAnimation, createIdleMiner } from '../components/MinerAnimation';
+import { createTreasureChest } from '../components/AnimatedIcons';
 
 type MineStatus = {
   cartAmount: number;
@@ -45,6 +47,7 @@ export class MainScene {
     repair: null as HTMLButtonElement | null,
     statusBtn: null as HTMLButtonElement | null,
     hologram: null as HTMLElement | null,
+    minerChar: null as HTMLElement | null,
   };
 
   private mineUpdateHandler?: (msg: any) => void;
@@ -88,6 +91,7 @@ export class MainScene {
                 <div class="ring-glow ring-glow-b"></div>
               </div>
               <div class="mine-progress">
+                <div class="miner-char-wrapper" id="minerChar"></div>
                 <div class="mine-progress-meta">
                   <span>矿车装载</span>
                   <strong id="percent">0%</strong>
@@ -157,6 +161,10 @@ export class MainScene {
     this.els.repair = qs<HTMLButtonElement>(this.view, '#repair');
     this.els.statusBtn = qs<HTMLButtonElement>(this.view, '#status');
     this.els.hologram = this.view.querySelector('#hologram');
+    this.els.minerChar = this.view.querySelector('#minerChar');
+    
+    // 初始化矿工角色
+    this.updateMinerAnimation();
   }
 
   private attachHandlers(updateBar: () => Promise<void>) {
@@ -586,6 +594,32 @@ export class MainScene {
     } else {
       this.els.hologram.classList.add('holo-idle');
     }
+    
+    // 更新矿工动画
+    this.updateMinerAnimation();
+  }
+
+  private updateMinerAnimation() {
+    if (!this.els.minerChar) return;
+    
+    this.els.minerChar.innerHTML = '';
+    
+    if (this.isCollapsed) {
+      // 坍塌状态：显示警告图标
+      const warning = html(`
+        <div style="text-align:center;opacity:.6;">
+          <div style="font-size:48px;animation:warning-pulse 1s ease-in-out infinite;">⚠️</div>
+          <div style="font-size:13px;margin-top:8px;">矿道坍塌</div>
+        </div>
+      `);
+      this.els.minerChar.appendChild(warning);
+    } else if (this.isMining) {
+      // 挖矿中：显示动画
+      this.els.minerChar.appendChild(createMinerAnimation());
+    } else {
+      // 待机：显示静态矿工
+      this.els.minerChar.appendChild(createIdleMiner());
+    }
   }
 
   private updateShards(loadPercent: number) {
@@ -691,6 +725,19 @@ export class MainScene {
     setBtn(this.els.collect, 'collect', isBusy('collect') ? '收集中…' : '收矿', isBusy('collect') || this.cartAmt <= 0);
     setBtn(this.els.repair, 'wrench', isBusy('repair') ? '修理中…' : '修理', isBusy('repair') || !this.isCollapsed);
     setBtn(this.els.statusBtn, 'refresh', isBusy('status') ? '刷新中…' : '刷新状态', isBusy('status'));
+    
+    // 收矿按钮添加宝箱动画
+    if (this.els.collect && this.cartAmt > 0 && !this.els.collect.disabled) {
+      const hasChest = this.els.collect.querySelector('.treasure-chest');
+      if (!hasChest) {
+        const chest = createTreasureChest();
+        const iconSlot = this.els.collect.querySelector('.icon');
+        if (iconSlot) {
+          iconSlot.innerHTML = '';
+          iconSlot.appendChild(chest);
+        }
+      }
+    }
   }
 
   private setStatusMessage(text: string) {
@@ -752,6 +799,12 @@ export class MainScene {
     if (this.els.hologram) {
       this.els.hologram.classList.add('critical-flash');
       setTimeout(() => this.els.hologram?.classList.remove('critical-flash'), 400);
+    }
+    
+    // 矿工暴击动作（加速挥动）
+    if (this.els.minerChar) {
+      this.els.minerChar.classList.add('critical-mining');
+      setTimeout(() => this.els.minerChar?.classList.remove('critical-mining'), 1200);
     }
   }
 

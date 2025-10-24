@@ -4,6 +4,7 @@ import { renderNav } from '../components/Nav';
 import { RealtimeClient } from '../core/RealtimeClient';
 import { renderResourceBar } from '../components/ResourceBar';
 import { renderIcon } from '../components/Icon';
+import { createTrophyAnimation } from '../components/AnimatedIcons';
 
 export class RankingScene {
   mount(root: HTMLElement) {
@@ -58,12 +59,24 @@ export class RankingScene {
           const cls = entry.rank <= 3 ? ' list-item--buy' : '';
           const row = html(`
             <div class="list-item${cls}">
-              <span>${medal} #${entry.rank}</span>
+              <span style="display:flex;align-items:center;gap:8px;">
+                <span id="trophy${entry.rank}"></span>
+                ${medal} #${entry.rank}
+              </span>
               <span style="flex:1;opacity:.9;margin-left:12px;display:flex;align-items:center;gap:6px;"><span data-ico="user"></span>${entry.userId}</span>
               <strong>${entry.score}</strong>
             </div>
           `);
           mountIcons(row);
+          
+          // 为前3名添加奖杯动画
+          if (entry.rank <= 3) {
+            const trophySlot = row.querySelector(`#trophy${entry.rank}`);
+            if (trophySlot) {
+              trophySlot.appendChild(createTrophyAnimation(entry.rank));
+            }
+          }
+          
           list.appendChild(row);
         }
       } catch (e: any) {

@@ -5,6 +5,7 @@ import { RealtimeClient } from '../core/RealtimeClient';
 import { showToast } from '../components/Toast';
 import { renderResourceBar } from '../components/ResourceBar';
 import { renderIcon } from '../components/Icon';
+import { createSwordSlash } from '../components/AnimatedIcons';
 
 export class PlunderScene {
   private resultBox: HTMLElement | null = null;
@@ -138,14 +139,21 @@ export class PlunderScene {
             <div class="list-item list-item--sell">
               <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="display:flex;align-items:center;gap:6px;"><span data-ico="target"></span><strong>${target.username || target.id}</strong></div>
-                <div style="opacity:.85;">矿石：${target.ore} <span class="pill">预计收益 5%~30%</span></div>
+                <div style="opacity:.85;">矿石：${target.ore} <span class="pill">预计收益 5%~35%</span></div>
               </div>
               <div>
-                <button class="btn btn-sell" data-id="${target.id}"><span data-ico="sword"></span>掠夺</button>
+                <button class="btn btn-sell plunder-btn" data-id="${target.id}"><span class="icon-slot"></span>掠夺</button>
               </div>
             </div>
           `);
           mountIcons(row);
+          
+          // 添加剑气动画到掠夺按钮
+          const plunderBtn = row.querySelector('.plunder-btn .icon-slot');
+          if (plunderBtn) {
+            plunderBtn.appendChild(createSwordSlash());
+          }
+          
           row.addEventListener('click', async (ev) => {
             const el = ev.target as HTMLButtonElement;
             const id = el.getAttribute('data-id');
