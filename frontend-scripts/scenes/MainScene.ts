@@ -168,7 +168,7 @@ export class MainScene {
   }
 
   private setupRealtime() {
-    const token = (NetworkManager as any).I['token'];
+    const token = NetworkManager.I.getToken();
     if (token) RealtimeClient.I.connect(token);
 
     if (this.mineUpdateHandler) RealtimeClient.I.off('mine.update', this.mineUpdateHandler);

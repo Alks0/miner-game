@@ -29,7 +29,7 @@ export class PlunderScene {
     `);
     root.appendChild(view);
 
-    const token = (NetworkManager as any).I['token'];
+    const token = NetworkManager.I.getToken();
     if (token) RealtimeClient.I.connect(token);
 
     RealtimeClient.I.on('plunder.attacked', (msg) => {

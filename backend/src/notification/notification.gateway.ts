@@ -37,7 +37,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   emitToUser(userId: string, event: string, data: any) {
     const socketId = this.userSocketMap.get(userId);
     if (socketId) {
+      console.log(`[NotificationGateway] Emitting ${event} to user ${userId} (socket ${socketId})`);
       this.server.to(socketId).emit(event, data);
+    } else {
+      console.warn(`[NotificationGateway] No socket found for user ${userId}, event: ${event}`);
     }
   }
 

@@ -26,7 +26,7 @@ export class RankingScene {
     `);
     root.appendChild(view);
 
-    const token = (NetworkManager as any).I['token'];
+    const token = NetworkManager.I.getToken();
     if (token) RealtimeClient.I.connect(token);
 
     const meBox = qs(view, '#me');

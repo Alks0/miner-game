@@ -90,7 +90,7 @@ export class ExchangeScene {
     root.appendChild(bar.root);
     root.appendChild(view);
 
-    const token = (NetworkManager as any).I['token'];
+    const token = NetworkManager.I.getToken();
     if (token) RealtimeClient.I.connect(token);
     const me = GameManager.I.getProfile();
 

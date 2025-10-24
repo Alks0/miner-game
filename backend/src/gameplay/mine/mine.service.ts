@@ -28,6 +28,7 @@ export class MineService {
     // 先刷新状态以获取最新装备数据
     this.refreshStateFromEquipment(userId, state);
     if (!state.timer) {
+      console.log(`[MineService] Starting mining for user ${userId}, interval: ${state.intervalMs}ms`);
       state.timer = setInterval(() => this.produceOnce(userId), state.intervalMs);
     }
     return this.buildStatus(state);
@@ -72,7 +73,10 @@ export class MineService {
 
   private produceOnce(userId: string) {
     const state = this.userState.get(userId);
-    if (!state) return;
+    if (!state) {
+      console.warn(`[MineService] produceOnce called but no state for user ${userId}`);
+      return;
+    }
     const now = Date.now();
     if (state.collapsedUntil && now < state.collapsedUntil) {
       this.notification.emitToUser(userId, 'mine.update', {
@@ -103,6 +107,9 @@ export class MineService {
     const space = Math.max(0, state.cartCapacity - state.cartAmount);
     const gain = Math.min(space, amount);
     state.cartAmount += gain;
+    
+    console.log(`[MineService] Produced for ${userId}: type=${type}, amount=${gain}, cart=${state.cartAmount}/${state.cartCapacity}`);
+    
     this.notification.emitToUser(userId, 'mine.update', {
       type,
       amount: gain,

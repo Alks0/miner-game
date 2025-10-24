@@ -35,7 +35,7 @@ export class WarehouseScene {
     `);
     root.appendChild(view);
 
-    const token = (NetworkManager as any).I['token'];
+    const token = NetworkManager.I.getToken();
     if (token) RealtimeClient.I.connect(token);
 
     const list = qs(view, '#list');
@@ -122,13 +122,16 @@ export class WarehouseScene {
           `);
           mountIcons(row);
           row.addEventListener('click', async (ev) => {
-            const target = ev.target as HTMLButtonElement;
-            const id = target.getAttribute('data-id');
-            const act = target.getAttribute('data-act');
+            // 查找真正的按钮元素（可能点击了内部的span/svg）
+            const btn = (ev.target as HTMLElement).closest('button') as HTMLButtonElement;
+            if (!btn) return;
+            
+            const id = btn.getAttribute('data-id');
+            const act = btn.getAttribute('data-act');
             if (!id || !act) return;
             
             // 防止重复点击
-            if (target.disabled && act !== 'toggle') return;
+            if (btn.disabled && act !== 'toggle') return;
             
             if (act === 'toggle') {
               const box = row.querySelector(`#tl-${id}`) as HTMLElement;
@@ -169,26 +172,25 @@ export class WarehouseScene {
               }
               return;
             }
+            
+            // 操作按钮处理
             try {
-              target.disabled = true;
-              const originalHTML = target.innerHTML;
+              btn.disabled = true;
+              const originalHTML = btn.innerHTML;
               
               if (act === 'equip') {
-                target.innerHTML = '<span data-ico="shield"></span>装备中…';
-              } else if (act === 'unequip') {
-                target.innerHTML = '<span data-ico="x"></span>卸下中…';
-              } else if (act === 'upgrade') {
-                target.innerHTML = '<span data-ico="wrench"></span>升级中…';
-              }
-              mountIcons(target);
-              
-              if (act === 'equip') {
+                btn.innerHTML = '<span data-ico="shield"></span>装备中…';
+                mountIcons(btn);
                 await NetworkManager.I.request('/items/equip', { method: 'POST', body: JSON.stringify({ itemId: id }) });
                 showToast('装备成功', 'success');
               } else if (act === 'unequip') {
+                btn.innerHTML = '<span data-ico="x"></span>卸下中…';
+                mountIcons(btn);
                 await NetworkManager.I.request('/items/unequip', { method: 'POST', body: JSON.stringify({ itemId: id }) });
                 showToast('卸下成功', 'success');
               } else if (act === 'upgrade') {
+                btn.innerHTML = '<span data-ico="wrench"></span>升级中…';
+                mountIcons(btn);
                 const res = await NetworkManager.I.request<{ level: number; cost: number }>('/items/upgrade', { method: 'POST', body: JSON.stringify({ itemId: id }) });
                 // 升级成功动画
                 row.classList.add('upgrade-success');
@@ -200,10 +202,8 @@ export class WarehouseScene {
             } catch (e: any) {
               showToast(e?.message || '操作失败', 'error');
               // 失败时恢复按钮原始状态（因为不会重新渲染）
-              target.innerHTML = originalHTML;
-              mountIcons(target);
-            } finally {
-              target.disabled = false;
+              btn.innerHTML = originalHTML;
+              btn.disabled = false;
             }
           });
           list.appendChild(row);

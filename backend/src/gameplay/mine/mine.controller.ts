@@ -8,10 +8,12 @@ export class MineController {
   constructor(private readonly mine: MineService) {}
 
   @Post('start')
-  start(@Req() req: any) {
+  async start(@Req() req: any) {
     // 确保用户存在（token直连时）
     // @ts-ignore
-    this.mine['users'].ensureFromPayload(req.user);
+    await this.mine['users'].ensureFromPayload(req.user);
+    // @ts-ignore
+    this.mine['items'].ensureStarter(req.user.sub);
     return this.mine.start(req.user.sub);
   }
 
@@ -21,31 +23,39 @@ export class MineController {
   }
 
   @Get('cart')
-  cart(@Req() req: any) {
+  async cart(@Req() req: any) {
     // @ts-ignore
-    this.mine['users'].ensureFromPayload(req.user);
+    await this.mine['users'].ensureFromPayload(req.user);
+    // @ts-ignore
+    this.mine['items'].ensureStarter(req.user.sub);
     return this.mine.getCart(req.user.sub);
   }
 
   @Post('collect')
-  collect(@Req() req: any) {
+  async collect(@Req() req: any) {
     // @ts-ignore
-    this.mine['users'].ensureFromPayload(req.user);
+    await this.mine['users'].ensureFromPayload(req.user);
+    // @ts-ignore
+    this.mine['items'].ensureStarter(req.user.sub);
     return this.mine.collect(req.user.sub);
   }
 
   @Get('status')
-  status(@Req() req: any) {
+  async status(@Req() req: any) {
     // @ts-ignore
-    this.mine['users'].ensureFromPayload(req.user);
+    await this.mine['users'].ensureFromPayload(req.user);
+    // @ts-ignore
+    this.mine['items'].ensureStarter(req.user.sub);
     return this.mine.getStatus(req.user.sub);
   }
 
   // 仅本地验证用：快速修理
   @Post('repair')
-  repair(@Req() req: any) {
+  async repair(@Req() req: any) {
     // @ts-ignore
-    this.mine['users'].ensureFromPayload(req.user);
+    await this.mine['users'].ensureFromPayload(req.user);
+    // @ts-ignore
+    this.mine['items'].ensureStarter(req.user.sub);
     return this.mine.repair(req.user.sub);
   }
 }
