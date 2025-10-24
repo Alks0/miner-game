@@ -43,6 +43,7 @@ export class MainScene {
     collect: null as HTMLButtonElement | null,
     repair: null as HTMLButtonElement | null,
     statusBtn: null as HTMLButtonElement | null,
+    hologram: null as HTMLElement | null,
   };
 
   private mineUpdateHandler?: (msg: any) => void;
@@ -56,28 +57,64 @@ export class MainScene {
     const nav = renderNav('main');
     const bar = renderResourceBar();
     const view = html(`
-      <div class="container grid-2" style="color:#fff;">
-        <div class="mine card fade-in">
-          <div style="opacity:.9;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span data-ico="pick"></span>挖矿面板</div>
-          <div style="height:10px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;">
-            <div id="fill" style="height:100%;width:0%;background:linear-gradient(90deg,#7B2CF5,#2C89F5);box-shadow:0 0 10px #7B2CF5;transition:width .3s ease"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 12px;">
-            <span>矿车装载</span>
-            <strong id="percent">0%</strong>
-          </div>
-          <div class="row" style="gap:8px;">
-            <button id="start" class="btn btn-buy" style="flex:1;"><span data-ico="play"></span>开始挖矿</button>
-            <button id="stop" class="btn btn-ghost" style="flex:1;"><span data-ico="stop"></span>停止</button>
-            <button id="collect" class="btn btn-primary" style="flex:1;"><span data-ico="collect"></span>收矿</button>
-          </div>
-          <div class="row" style="gap:8px;margin-top:8px;">
-            <button id="status" class="btn btn-ghost" style="flex:1;"><span data-ico="refresh"></span>刷新状态</button>
-            <button id="repair" class="btn btn-sell" style="flex:1;"><span data-ico="wrench"></span>修理</button>
-          </div>
-          <div id="statusText" style="margin-top:6px;opacity:.9;min-height:20px;"></div>
+      <section class="main-screen">
+        <div class="main-ambient" aria-hidden="true">
+          <span class="ambient orb orb-a"></span>
+          <span class="ambient orb orb-b"></span>
+          <span class="ambient grid"></span>
         </div>
-      </div>
+        <div class="container main-stack" style="color:#fff;">
+          <section class="mine card mine-card fade-in">
+            <header class="mine-header">
+              <div class="mine-title">
+                <span class="title-icon" data-ico="pick"></span>
+                <span class="title-label">挖矿面板</span>
+              </div>
+              <div class="mine-chips">
+                <span class="pill" id="statusTag">待机</span>
+                <span class="pill pill-cycle"><span data-ico="clock"></span>周期 <span id="cycle">3s</span></span>
+              </div>
+            </header>
+            <div class="mine-grid">
+              <div class="mine-gauge">
+                <div class="ring" id="ring">
+                  <div class="ring-core">
+                    <span id="ringPct">0%</span>
+                    <small>装载率</small>
+                  </div>
+                </div>
+                <div class="ring-glow ring-glow-a"></div>
+                <div class="ring-glow ring-glow-b"></div>
+              </div>
+              <div class="mine-progress">
+                <div class="mine-progress-meta">
+                  <span>矿车装载</span>
+                  <strong id="percent">0%</strong>
+                </div>
+                <div class="mine-progress-track">
+                  <div class="mine-progress-fill" id="fill"></div>
+                </div>
+                <div id="statusText" class="mine-status"></div>
+              </div>
+            </div>
+            <div class="mine-actions-grid">
+              <button id="start" class="btn btn-buy span-2"><span data-ico="play"></span>开始挖矿</button>
+              <button id="stop" class="btn btn-ghost"><span data-ico="stop"></span>停止</button>
+              <button id="collect" class="btn btn-primary"><span data-ico="collect"></span>收矿</button>
+              <button id="status" class="btn btn-ghost"><span data-ico="refresh"></span>刷新状态</button>
+              <button id="repair" class="btn btn-sell"><span data-ico="wrench"></span>修理</button>
+            </div>
+            <div class="mine-feed">
+              <div class="event-feed" id="events"></div>
+            </div>
+            <div class="mine-hologram" id="hologram" aria-hidden="true">
+              <span class="mine-holo-grid"></span>
+              <span class="mine-holo-grid diagonal"></span>
+              <span class="mine-holo-glow"></span>
+            </div>
+          </section>
+        </div>
+      </section>
     `);
 
     root.innerHTML = '';
@@ -94,7 +131,6 @@ export class MainScene {
           try { el.appendChild(renderIcon(name, { size: 20 })); } catch {}
         });
     } catch {}
-    this.upgradeMineCardUI();
     this.cacheElements();
     this.attachHandlers(bar.update.bind(bar));
     await bar.update();
@@ -119,32 +155,7 @@ export class MainScene {
     this.els.collect = qs<HTMLButtonElement>(this.view, '#collect');
     this.els.repair = qs<HTMLButtonElement>(this.view, '#repair');
     this.els.statusBtn = qs<HTMLButtonElement>(this.view, '#status');
-  }
-
-  // Enhance UI: add radial meter and event feed dynamically
-  private upgradeMineCardUI() {
-    if (!this.view) return;
-    const mineCard = this.view.querySelector('.mine');
-    if (!mineCard) return;
-    try {
-      const block = html(`
-        <div class="row" style="gap:12px;align-items:center;margin-bottom:8px;">
-          <div class="ring" id="ring"><div class="label" id="ringPct">0%</div></div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <div class="pill" id="statusTag">待机</div>
-            <div class="pill"><span data-ico="clock"></span>周期 <span id="cycle">3s</span></div>
-          </div>
-        </div>
-      `);
-      block.querySelectorAll('[data-ico]')
-        .forEach((el) => {
-          const name = (el as HTMLElement).getAttribute('data-ico') as any;
-          try { el.appendChild(renderIcon(name, { size: 16 })); } catch {}
-        });
-      (mineCard as HTMLElement).insertBefore(block, (mineCard as HTMLElement).children[1] || null);
-      const feed = html(`<div class="event-feed" id="events" style="margin-top:10px;"></div>`);
-      (mineCard as HTMLElement).appendChild(feed);
-    } catch {}
+    this.els.hologram = this.view.querySelector('#hologram');
   }
 
   private attachHandlers(updateBar: () => Promise<void>) {
@@ -254,8 +265,8 @@ export class MainScene {
       const res = await NetworkManager.I.request<{ collected: number; status: MineStatus }>('/mine/collect', { method: 'POST' });
       if (res.status) this.applyStatus(res.status);
       if (res.collected > 0) {
-        const oreLabel = document.querySelector('#ore');
-        if (oreLabel) spawnFloatText(oreLabel as Element, `+${res.collected}`, '#7B2CF5');
+        // 创建抛物线飞行动画
+        this.createFlyingOreAnimation(res.collected);
         showToast(`收集矿石 ${res.collected}`, 'success');
       } else {
         showToast('矿车为空，无矿石可收集', 'warn');
@@ -266,6 +277,65 @@ export class MainScene {
     } finally {
       this.pending = null;
       this.updateControls();
+    }
+  }
+
+  private createFlyingOreAnimation(amount: number) {
+    const fillEl = this.els.fill;
+    const oreEl = document.querySelector('#ore');
+    if (!fillEl || !oreEl) return;
+
+    const startRect = fillEl.getBoundingClientRect();
+    const endRect = oreEl.getBoundingClientRect();
+
+    // 创建多个矿石粒子
+    const particleCount = Math.min(8, Math.max(3, Math.floor(amount / 20)));
+    for (let i = 0; i < particleCount; i++) {
+      setTimeout(() => {
+        const particle = document.createElement('div');
+        particle.className = 'ore-particle';
+        particle.textContent = '💎';
+        particle.style.cssText = `
+          position: fixed;
+          left: ${startRect.left + startRect.width / 2}px;
+          top: ${startRect.top + startRect.height / 2}px;
+          font-size: 24px;
+          pointer-events: none;
+          z-index: 9999;
+          filter: drop-shadow(0 0 8px rgba(123,44,245,0.8));
+        `;
+        document.body.appendChild(particle);
+
+        const dx = endRect.left + endRect.width / 2 - startRect.left - startRect.width / 2;
+        const dy = endRect.top + endRect.height / 2 - startRect.top - startRect.height / 2;
+        const randomOffset = (Math.random() - 0.5) * 100;
+
+        particle.animate([
+          { 
+            transform: 'translate(0, 0) scale(1)', 
+            opacity: 1 
+          },
+          { 
+            transform: `translate(${dx/2 + randomOffset}px, ${dy - 150}px) scale(1.2)`, 
+            opacity: 1,
+            offset: 0.5
+          },
+          { 
+            transform: `translate(${dx}px, ${dy}px) scale(0.5)`, 
+            opacity: 0 
+          }
+        ], {
+          duration: 1000 + i * 50,
+          easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+        }).onfinish = () => {
+          particle.remove();
+          // 最后一个粒子到达时，添加脉冲效果
+          if (i === particleCount - 1) {
+            oreEl.classList.add('flash');
+            setTimeout(() => oreEl.classList.remove('flash'), 900);
+          }
+        };
+      }, i * 80);
     }
   }
 
@@ -332,9 +402,20 @@ export class MainScene {
     if (this.els.statusTag) {
       const el = this.els.statusTag as HTMLElement;
       el.innerHTML = '';
+      
+      // 移除所有状态类
+      el.classList.remove('pill-running', 'pill-collapsed');
+      
       const ico = this.isCollapsed ? 'close' : (this.isMining ? 'bolt' : 'clock');
       try { el.appendChild(renderIcon(ico as any, { size: 16 })); } catch {}
       el.appendChild(document.createTextNode(this.isCollapsed ? '坍塌' : (this.isMining ? '运行中' : '待机')));
+      
+      // 添加对应的动态样式类
+      if (this.isCollapsed) {
+        el.classList.add('pill-collapsed');
+      } else if (this.isMining) {
+        el.classList.add('pill-running');
+      }
     }
     this.updateControls();
   }
@@ -365,18 +446,179 @@ export class MainScene {
     }
   }
 
+  private lastMilestone = 0;
+
   private updateProgress() {
     if (!this.els.fill || !this.els.percent) return;
     const pct = this.cartCap > 0 ? Math.min(1, this.cartAmt / this.cartCap) : 0;
-    this.els.fill.style.width = `${Math.round(pct * 100)}%`;
-    this.els.percent.textContent = `${Math.round(pct * 100)}%`;
+    const pctInt = Math.round(pct * 100);
+    
+    this.els.fill.style.width = `${pctInt}%`;
+    this.els.percent.textContent = `${pctInt}%`;
+    
+    // 圆环颜色渐变：紫色 -> 蓝色 -> 金色
+    let ringColor = '#7B2CF5'; // 紫色
+    if (pct >= 0.75) {
+      ringColor = '#f6c445'; // 金色
+    } else if (pct >= 0.5) {
+      ringColor = '#2C89F5'; // 蓝色
+    }
+    
     if (this.els.ring) {
       const deg = Math.round(pct * 360);
-      (this.els.ring as HTMLElement).style.background = `conic-gradient(#7B2CF5 ${deg}deg, rgba(255,255,255,.08) 0deg)`;
+      (this.els.ring as HTMLElement).style.background = `conic-gradient(${ringColor} ${deg}deg, rgba(255,255,255,.08) 0deg)`;
+      
+      // 满载时持续闪耀
+      if (pct >= 1) {
+        this.els.ring.classList.add('ring-full');
+      } else {
+        this.els.ring.classList.remove('ring-full');
+      }
     }
-    if (this.els.ringPct) this.els.ringPct.textContent = `${Math.round(pct * 100)}%`;
+    
+    if (this.els.ringPct) this.els.ringPct.textContent = `${pctInt}%`;
+    
+    // 里程碑脉冲特效
+    const milestones = [25, 50, 75, 100];
+    for (const milestone of milestones) {
+      if (pctInt >= milestone && this.lastMilestone < milestone) {
+        this.triggerMilestonePulse(milestone);
+        this.lastMilestone = milestone;
+      }
+    }
+    
+    // 当装载率下降（收矿后）重置里程碑
+    if (pctInt < this.lastMilestone - 10) {
+      this.lastMilestone = Math.floor(pctInt / 25) * 25;
+    }
+    
+    // 90%警告提示
+    if (pctInt >= 90 && pctInt < 100) {
+      if (!this.els.statusText?.textContent?.includes('即将满载')) {
+        this.setStatusMessage('⚠️ 矿车即将满载，建议收矿');
+      }
+    }
+    
     if (this.pending !== 'collect' && this.els.collect) {
       this.els.collect.disabled = this.pending === 'collect' || this.cartAmt <= 0;
+      
+      // 可收矿时添加能量特效
+      if (this.cartAmt > 0 && !this.els.collect.disabled) {
+        this.els.collect.classList.add('btn-energy');
+      } else {
+        this.els.collect.classList.remove('btn-energy');
+      }
+    }
+    
+    // 更新矿石数量
+    this.updateShards(pct);
+    
+    // 更新全息背景状态
+    this.updateHologramState();
+  }
+
+  private triggerMilestonePulse(milestone: number) {
+    if (this.els.ring) {
+      this.els.ring.classList.add('milestone-pulse');
+      setTimeout(() => this.els.ring?.classList.remove('milestone-pulse'), 1000);
+    }
+    
+    if (this.els.ringPct) {
+      this.els.ringPct.classList.add('flash');
+      setTimeout(() => this.els.ringPct?.classList.remove('flash'), 900);
+    }
+    
+    // 显示里程碑消息
+    showToast(`🎯 达成 ${milestone}% 装载率！`, 'success');
+  }
+
+  private updateHologramState() {
+    if (!this.els.hologram) return;
+    
+    // 移除所有状态类
+    this.els.hologram.classList.remove('holo-idle', 'holo-mining', 'holo-collapsed');
+    
+    // 根据状态添加对应的类
+    if (this.isCollapsed) {
+      this.els.hologram.classList.add('holo-collapsed');
+    } else if (this.isMining) {
+      this.els.hologram.classList.add('holo-mining');
+    } else {
+      this.els.hologram.classList.add('holo-idle');
+    }
+  }
+
+  private updateShards(loadPercent: number) {
+    if (!this.els.hologram) return;
+    
+    // 计算应该显示的矿石数量（装载率越高，矿石越多）
+    // 0-20%: 2个, 20-40%: 4个, 40-60%: 6个, 60-80%: 8个, 80-100%: 10个
+    const targetCount = Math.max(2, Math.min(12, Math.floor(loadPercent * 12) + 2));
+    
+    // 获取当前矿石元素
+    const currentShards = this.els.hologram.querySelectorAll('.mine-shard');
+    const currentCount = currentShards.length;
+    
+    // 如果数量相同，不做处理
+    if (currentCount === targetCount) return;
+    
+    // 需要添加矿石
+    if (currentCount < targetCount) {
+      const toAdd = targetCount - currentCount;
+      for (let i = 0; i < toAdd; i++) {
+        const shard = document.createElement('span');
+        shard.className = 'mine-shard';
+        
+        // 随机位置和大小
+        const positions = [
+          { top: '18%', left: '16%', delay: -1.4, scale: 1 },
+          { bottom: '16%', right: '22%', delay: -3.2, scale: 0.74 },
+          { top: '26%', right: '34%', delay: -5.1, scale: 0.5 },
+          { top: '40%', left: '28%', delay: -2.5, scale: 0.85 },
+          { bottom: '30%', left: '18%', delay: -4.1, scale: 0.68 },
+          { top: '15%', right: '15%', delay: -1.8, scale: 0.92 },
+          { bottom: '22%', right: '40%', delay: -3.8, scale: 0.78 },
+          { top: '50%', left: '12%', delay: -2.2, scale: 0.6 },
+          { top: '35%', right: '20%', delay: -4.5, scale: 0.88 },
+          { bottom: '40%', left: '35%', delay: -3.5, scale: 0.7 },
+          { top: '60%', right: '28%', delay: -2.8, scale: 0.65 },
+          { bottom: '50%', right: '12%', delay: -4.8, scale: 0.82 },
+        ];
+        
+        const posIndex = (currentCount + i) % positions.length;
+        const pos = positions[posIndex];
+        
+        if (pos.top) shard.style.top = pos.top;
+        if (pos.bottom) shard.style.bottom = pos.bottom;
+        if (pos.left) shard.style.left = pos.left;
+        if (pos.right) shard.style.right = pos.right;
+        shard.style.animationDelay = `${pos.delay}s`;
+        shard.style.transform = `scale(${pos.scale})`;
+        
+        // 添加淡入动画
+        shard.style.opacity = '0';
+        this.els.hologram.appendChild(shard);
+        
+        // 触发淡入
+        setTimeout(() => {
+          shard.style.transition = 'opacity 0.5s ease';
+          shard.style.opacity = '0.26';
+        }, 50);
+      }
+    }
+    // 需要移除矿石
+    else if (currentCount > targetCount) {
+      const toRemove = currentCount - targetCount;
+      for (let i = 0; i < toRemove; i++) {
+        const lastShard = currentShards[currentShards.length - 1 - i];
+        if (lastShard) {
+          (lastShard as HTMLElement).style.transition = 'opacity 0.5s ease';
+          (lastShard as HTMLElement).style.opacity = '0';
+          setTimeout(() => {
+            lastShard.remove();
+          }, 500);
+        }
+      }
     }
   }
 
@@ -419,13 +661,58 @@ export class MainScene {
   private logEvent(msg: string) {
     if (!this.els?.events) return;
     const line = document.createElement('div');
-    line.className = 'event';
     const now = new Date();
     const hh = String(now.getHours()).padStart(2,'0');
     const mm = String(now.getMinutes()).padStart(2,'0');
     const ss = String(now.getSeconds()).padStart(2,'0');
+    
+    // 根据消息类型添加不同的样式类
+    let eventClass = 'event';
+    if (msg.includes('暴击')) {
+      eventClass += ' event-critical';
+    } else if (msg.includes('坍塌') || msg.includes('掠夺')) {
+      eventClass += ' event-warning';
+    } else if (msg.includes('收集') || msg.includes('成功')) {
+      eventClass += ' event-success';
+    } else {
+      eventClass += ' event-normal';
+    }
+    
+    line.className = eventClass;
     line.textContent = `[${hh}:${mm}:${ss}] ${msg}`;
+    
+    // 添加滑入动画
+    line.style.opacity = '0';
+    line.style.transform = 'translateX(20px)';
     this.els.events.prepend(line);
+    
+    // 触发动画
+    setTimeout(() => {
+      line.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      line.style.opacity = '0.9';
+      line.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // 暴击事件添加闪光效果
+    if (msg.includes('暴击')) {
+      line.classList.add('flash');
+      // 触发全局暴击特效
+      this.triggerCriticalEffect();
+    }
+  }
+
+  private triggerCriticalEffect() {
+    // 圆环闪电效果
+    if (this.els.ring) {
+      this.els.ring.classList.add('ring-pulse');
+      setTimeout(() => this.els.ring?.classList.remove('ring-pulse'), 600);
+    }
+    
+    // 全息背景闪烁
+    if (this.els.hologram) {
+      this.els.hologram.classList.add('critical-flash');
+      setTimeout(() => this.els.hologram?.classList.remove('critical-flash'), 400);
+    }
   }
 
   private formatPercent() {
@@ -433,11 +720,3 @@ export class MainScene {
     return `${Math.round(pct * 100)}%`;
   }
 }
-    // mount icons
-    try {
-      view.querySelectorAll('[data-ico]')
-        .forEach((el) => {
-          const name = (el as HTMLElement).getAttribute('data-ico') as any;
-          try { el.appendChild(renderIcon(name, { size: 20 })); } catch {}
-        });
-    } catch {}

@@ -1,5 +1,6 @@
 import { NetworkManager } from '../core/NetworkManager';
 import { renderIcon } from './Icon';
+import { CountUpText } from './CountUpText';
 
 export function renderResourceBar() {
   const box = document.createElement('div');
@@ -7,20 +8,15 @@ export function renderResourceBar() {
   const card = document.createElement('div');
   card.className = 'card fade-in';
   card.innerHTML = `
-    <div style="display:flex;justify-content:space-between"><span>💎 矿石</span><strong id="ore">0</strong></div>
-    <div style="display:flex;justify-content:space-between"><span>🪙 BB币</span><strong id="coin">0</strong></div>
-  `;
-  // override with enhanced stats layout
-  card.innerHTML = `
     <div class="stats">
-      <div class="stat">
+      <div class="stat" id="ore-stat">
         <div class="ico" data-ico="ore"></div>
         <div style="display:flex;flex-direction:column;gap:2px;">
           <div class="val" id="ore">0</div>
           <div class="label">矿石</div>
         </div>
       </div>
-      <div class="stat">
+      <div class="stat" id="coin-stat">
         <div class="ico" data-ico="coin"></div>
         <div style="display:flex;flex-direction:column;gap:2px;">
           <div class="val" id="coin">0</div>
@@ -37,16 +33,50 @@ export function renderResourceBar() {
     if (oreIco) oreIco.appendChild(renderIcon('ore', { size: 18 }));
     if (coinIco) coinIco.appendChild(renderIcon('coin', { size: 18 }));
   } catch {}
+  
   const oreEl = card.querySelector('#ore') as HTMLElement;
   const coinEl = card.querySelector('#coin') as HTMLElement;
+  
+  const oreCounter = new CountUpText();
+  const coinCounter = new CountUpText();
+  oreCounter.onUpdate = (text) => { oreEl.textContent = text; };
+  coinCounter.onUpdate = (text) => { coinEl.textContent = text; };
+  
+  let prevOre = 0;
+  let prevCoin = 0;
+  
   async function update() {
     try {
       const p = await NetworkManager.I.request<{ id: string; username: string; nickname: string; oreAmount: number; bbCoins: number }>('/user/profile');
-      oreEl.textContent = String(p.oreAmount);
-      coinEl.textContent = String(p.bbCoins);
+      
+      // 使用计数动画更新
+      if (p.oreAmount !== prevOre) {
+        oreCounter.to(p.oreAmount, 800);
+        // 如果是增加，添加图标脉冲效果
+        if (p.oreAmount > prevOre) {
+          const oreIcon = card.querySelector('#ore-stat .ico');
+          if (oreIcon) {
+            oreIcon.classList.add('pulse-icon');
+            setTimeout(() => oreIcon.classList.remove('pulse-icon'), 600);
+          }
+        }
+        prevOre = p.oreAmount;
+      }
+      
+      if (p.bbCoins !== prevCoin) {
+        coinCounter.to(p.bbCoins, 800);
+        if (p.bbCoins > prevCoin) {
+          const coinIcon = card.querySelector('#coin-stat .ico');
+          if (coinIcon) {
+            coinIcon.classList.add('pulse-icon');
+            setTimeout(() => coinIcon.classList.remove('pulse-icon'), 600);
+          }
+        }
+        prevCoin = p.bbCoins;
+      }
     } catch {
       // ignore fetch errors; UI 会在下一次刷新时恢复
     }
   }
-  return { root: box, update };
+  return { root: box, update, oreEl, coinEl };
 }

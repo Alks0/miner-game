@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "dev": "node dev-server.js",
+    "build:web": "esbuild frontend-scripts/App.ts --bundle --format=iife --platform=browser --target=es2018 --sourcemap --outfile=web/app.js"
+  },
   "devDependencies": {
     "esbuild": "^0.25.11"
   }

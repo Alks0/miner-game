@@ -1,15 +1,41 @@
 Param(
-  [int]$Port = 5173
+  [int]$Port = 5173,
+  [int]$BackendPort = 3002,
+  [switch]$Rebuild,
+  [switch]$Open,
+  [switch]$KillExisting
 )
 
-Write-Host "[dev] Launching one-click dev (backend + H5 demo)" -ForegroundColor Cyan
+Write-Host "[dev] Launching one-click dev (backend + H5)" -ForegroundColor Cyan
 
 $env:FRONT_PORT = $Port
-$env:PORT = 3002
+$env:PORT = $BackendPort
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   Write-Error 'Node.js not found. Please install Node.js and run this script again.'
   exit 1
 }
+
+if ($KillExisting) {
+  try {
+    $cons = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+    if ($cons) {
+      $pids = $cons | Select-Object -ExpandProperty OwningProcess -Unique
+      foreach ($pid in $pids) {
+        try { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue; Write-Host "[dev] Killed process on :$Port (PID $pid)" -ForegroundColor Yellow } catch {}
+      }
+    }
+  } catch {}
+}
+
+if ($Rebuild) {
+  $es = Join-Path $PSScriptRoot 'node_modules/.bin/esbuild.cmd'
+  if (-not (Test-Path $es)) { Write-Host '[dev] Installing esbuild...' -ForegroundColor Yellow; npm i -D esbuild | Out-Null }
+  & $es "$(Join-Path $PSScriptRoot 'frontend-scripts/App.ts')" --bundle --format=iife --platform=browser --target=es2018 --sourcemap --outfile="$(Join-Path $PSScriptRoot 'web/app.js')"
+  if ($LASTEXITCODE -ne 0) { Write-Error '[dev] esbuild failed'; exit 1 }
+  Write-Host '[dev] Build complete: web/app.js' -ForegroundColor Green
+}
+
+if ($Open) { Start-Process "http://localhost:$Port/" }
 
 node dev-server.js
