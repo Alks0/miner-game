@@ -68,6 +68,7 @@ export class RankingScene {
         }
       } catch (e: any) {
         meBox.textContent = e?.message || '排行榜加载失败';
+        list.innerHTML = '<div style="opacity:.8;text-align:center;padding:20px;">加载失败，请稍后重试</div>';
       } finally {
         refreshBtn.disabled = false;
         refreshBtn.innerHTML = '<span data-ico="refresh"></span>刷新';

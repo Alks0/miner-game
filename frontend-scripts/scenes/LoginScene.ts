@@ -50,22 +50,47 @@ export class LoginScene {
     });
 
     const submit = async () => {
+      if (go.disabled) return; // 防止重复点击
+      
       const username = (uEl.value || '').trim();
       const password = (pEl.value || '').trim();
       if (!username || !password) {
         showToast('请填写用户名和密码', 'warn');
         return;
       }
+      if (username.length < 3 || username.length > 20) {
+        showToast('用户名长度应在 3-20 个字符之间', 'warn');
+        return;
+      }
+      if (password.length < 3) {
+        showToast('密码至少需要 3 个字符', 'warn');
+        return;
+      }
       go.disabled = true;
-      go.textContent = '登录中…';
+      const originalHTML = go.innerHTML;
+      go.innerHTML = '<span data-ico="arrow-right"></span>登录中…';
+      try {
+        view.querySelectorAll('[data-ico]').forEach((el) => {
+          const name = (el as HTMLElement).getAttribute('data-ico') as any;
+          try { el.appendChild(renderIcon(name, { size: 20 })); } catch {}
+        });
+      } catch {}
+      
       try {
         await GameManager.I.loginOrRegister(username, password);
         location.hash = '#/main';
       } catch (e: any) {
         showToast(e?.message || '登录失败，请重试', 'error');
+        // 失败时恢复按钮
+        go.innerHTML = originalHTML;
+        try {
+          view.querySelectorAll('[data-ico]').forEach((el) => {
+            const name = (el as HTMLElement).getAttribute('data-ico') as any;
+            try { el.appendChild(renderIcon(name, { size: 20 })); } catch {}
+          });
+        } catch {}
       } finally {
         go.disabled = false;
-        go.textContent = '进入游戏';
       }
     };
 

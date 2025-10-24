@@ -126,6 +126,10 @@ export class WarehouseScene {
             const id = target.getAttribute('data-id');
             const act = target.getAttribute('data-act');
             if (!id || !act) return;
+            
+            // 防止重复点击
+            if (target.disabled && act !== 'toggle') return;
+            
             if (act === 'toggle') {
               const box = row.querySelector(`#tl-${id}`) as HTMLElement;
               if (!box) return;
@@ -167,6 +171,8 @@ export class WarehouseScene {
             }
             try {
               target.disabled = true;
+              const originalHTML = target.innerHTML;
+              
               if (act === 'equip') {
                 target.innerHTML = '<span data-ico="shield"></span>装备中…';
               } else if (act === 'unequip') {
@@ -193,6 +199,9 @@ export class WarehouseScene {
               await load();
             } catch (e: any) {
               showToast(e?.message || '操作失败', 'error');
+              // 失败时恢复按钮原始状态（因为不会重新渲染）
+              target.innerHTML = originalHTML;
+              mountIcons(target);
             } finally {
               target.disabled = false;
             }
@@ -206,7 +215,8 @@ export class WarehouseScene {
           tplContainer.appendChild(row);
         }
       } catch (e: any) {
-        showToast(e?.message || '加载仓库失败');
+        showToast(e?.message || '加载仓库失败', 'error');
+        list.innerHTML = '<div style="opacity:.8;text-align:center;padding:20px;">加载失败，请稍后重试</div>';
       } finally {
         refreshBtn.disabled = false;
         refreshBtn.innerHTML = '<span data-ico="refresh"></span>刷新';

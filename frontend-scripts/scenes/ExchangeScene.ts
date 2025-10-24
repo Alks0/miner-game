@@ -236,15 +236,24 @@ export class ExchangeScene {
             const target = ev.target as HTMLElement;
             const id = target.getAttribute('data-id');
             if (!id) return;
+            const btn = target.closest('button') as HTMLButtonElement;
+            if (!btn) return;
+            
             try {
-              target.setAttribute('disabled', 'true');
+              btn.disabled = true;
+              const originalHTML = btn.innerHTML;
+              btn.innerHTML = '<span data-ico="trash"></span>撤单中…';
+              mountIcons(btn);
+              
               await NetworkManager.I.request(`/exchange/orders/${id}`, { method: 'DELETE' });
               showToast('撤单成功', 'success');
               await refresh();
             } catch (e: any) {
               showToast(e?.message || '撤单失败', 'error');
+              // 失败时需要恢复按钮（因为不会刷新列表）
+              await refresh();
             } finally {
-              target.removeAttribute('disabled');
+              btn.disabled = false;
             }
           });
           book.appendChild(row);
@@ -264,6 +273,8 @@ export class ExchangeScene {
     };
 
     placeBuy.onclick = async () => {
+      if (placeBuy.disabled) return; // 防止重复点击
+      
       const tplId = buyTpl.value.trim();
       const price = Number(buyPrice.value);
       const amount = Number(buyAmount.value);
@@ -271,12 +282,19 @@ export class ExchangeScene {
         showToast('请选择购买的模板', 'warn');
         return;
       }
-      if (price <= 0 || amount <= 0) {
-        showToast('请输入有效的价格与数量', 'warn');
+      if (isNaN(price) || isNaN(amount) || price <= 0 || amount <= 0 || !Number.isInteger(amount)) {
+        showToast('请输入有效的价格与数量（数量必须为整数）', 'warn');
+        return;
+      }
+      if (price > 1000000 || amount > 10000) {
+        showToast('数值过大，请输入合理的价格和数量', 'warn');
         return;
       }
       placeBuy.disabled = true;
-      placeBuy.textContent = '提交中…';
+      const originalBuyHTML = placeBuy.innerHTML;
+      placeBuy.innerHTML = '<span data-ico="arrow-right"></span>提交中…';
+      mountIcons(placeBuy);
+      
       try {
         const res = await NetworkManager.I.request<{ id: string }>('/exchange/orders', {
           method: 'POST',
@@ -291,23 +309,33 @@ export class ExchangeScene {
         log(e?.message || '买单提交失败');
       } finally {
         placeBuy.disabled = false;
-        placeBuy.textContent = '下买单';
+        placeBuy.innerHTML = originalBuyHTML;
+        mountIcons(placeBuy);
       }
     };
 
     placeSell.onclick = async () => {
+      if (placeSell.disabled) return; // 防止重复点击
+      
       const instId = sellInst.value.trim();
       const price = Number(sellPrice.value);
       if (!instId) {
         showToast('请选择要出售的道具', 'warn');
         return;
       }
-      if (price <= 0) {
+      if (isNaN(price) || price <= 0) {
         showToast('请输入有效的价格', 'warn');
         return;
       }
+      if (price > 1000000) {
+        showToast('价格过高，请输入合理的价格', 'warn');
+        return;
+      }
       placeSell.disabled = true;
-      placeSell.textContent = '提交中…';
+      const originalSellHTML = placeSell.innerHTML;
+      placeSell.innerHTML = '<span data-ico="arrow-right"></span>提交中…';
+      mountIcons(placeSell);
+      
       try {
         const res = await NetworkManager.I.request<{ id: string }>('/exchange/orders', {
           method: 'POST',
@@ -323,7 +351,8 @@ export class ExchangeScene {
         log(e?.message || '卖单提交失败');
       } finally {
         placeSell.disabled = false;
-        placeSell.textContent = '下卖单';
+        placeSell.innerHTML = originalSellHTML;
+        mountIcons(placeSell);
       }
     };
 

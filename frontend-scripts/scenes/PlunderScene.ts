@@ -79,16 +79,21 @@ export class PlunderScene {
             const el = ev.target as HTMLButtonElement;
             const id = el.getAttribute('data-id');
             if (!id) return;
-            el.disabled = true;
-            const original = el.textContent || '';
-            el.textContent = '掠夺中…';
+            const btn = el.closest('button') as HTMLButtonElement;
+            if (!btn) return;
+            
+            btn.disabled = true;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span data-ico="sword"></span>掠夺中…';
+            mountIcons(btn);
+            
+            let shouldRefresh = false;
             try {
               const res = await NetworkManager.I.request<{ success: boolean; loot_amount: number }>(`/plunder/${id}`, { method: 'POST' });
               if (res.success) {
                 this.log(`成功掠夺 ${id}，获得 ${res.loot_amount}`);
                 showToast(`掠夺成功，获得 ${res.loot_amount} 矿石`, 'success');
-                // 刷新列表
-                await load();
+                shouldRefresh = true;
               } else {
                 this.log(`掠夺 ${id} 失败`);
                 showToast('掠夺失败', 'warn');
@@ -102,15 +107,22 @@ export class PlunderScene {
               } else {
                 showToast(message, 'error');
               }
+              // 失败时恢复按钮
+              btn.innerHTML = originalHTML;
+              mountIcons(btn);
             } finally {
-              el.textContent = original;
-              el.disabled = false;
+              btn.disabled = false;
+              // 成功后刷新列表（会替换按钮）
+              if (shouldRefresh) {
+                await load();
+              }
             }
           });
           list.appendChild(row);
         }
       } catch (e: any) {
-        showToast(e?.message || '加载掠夺目标失败');
+        showToast(e?.message || '加载掠夺目标失败', 'error');
+        list.innerHTML = '<div style="opacity:.8;text-align:center;padding:20px;">加载失败，请稍后重试</div>';
       } finally {
         refreshBtn.disabled = false;
         refreshBtn.innerHTML = '<span data-ico="refresh"></span>刷新';

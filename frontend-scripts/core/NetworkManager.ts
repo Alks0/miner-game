@@ -29,10 +29,32 @@ export class NetworkManager {
   async request<T>(path: string, init?: RequestInit): Promise<T> {
     const headers: any = { 'Content-Type': 'application/json', ...(init?.headers || {}) };
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
-    const res = await fetch(this.getBase() + path, { ...init, headers });
-    const json = await res.json();
-    if (!res.ok || json.code >= 400) throw new Error(json.message || 'Request Error');
-    return json.data as T;
+    
+    try {
+      const res = await fetch(this.getBase() + path, { ...init, headers });
+      const json = await res.json();
+      
+      // 401 未授权，清除 token 并跳转登录
+      if (res.status === 401) {
+        this.clearToken();
+        if (location.hash !== '#/login') {
+          location.hash = '#/login';
+        }
+        throw new Error('登录已过期，请重新登录');
+      }
+      
+      if (!res.ok || json.code >= 400) {
+        throw new Error(json.message || 'Request Error');
+      }
+      
+      return json.data as T;
+    } catch (error) {
+      // 网络错误处理
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('网络连接失败，请检查网络或后端服务');
+      }
+      throw error;
+    }
   }
 
   getBase(): string {
