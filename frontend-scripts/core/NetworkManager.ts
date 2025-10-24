@@ -3,7 +3,28 @@ export class NetworkManager {
   static get I(): NetworkManager { return this._instance ?? (this._instance = new NetworkManager()); }
 
   private token: string | null = null;
-  setToken(t: string | null) { this.token = t; }
+  
+  constructor() {
+    // 从 localStorage 恢复 token
+    this.token = localStorage.getItem('auth_token');
+  }
+  
+  setToken(t: string | null) { 
+    this.token = t;
+    if (t) {
+      localStorage.setItem('auth_token', t);
+    } else {
+      localStorage.removeItem('auth_token');
+    }
+  }
+  
+  getToken(): string | null {
+    return this.token;
+  }
+  
+  clearToken() {
+    this.setToken(null);
+  }
 
   async request<T>(path: string, init?: RequestInit): Promise<T> {
     const headers: any = { 'Content-Type': 'application/json', ...(init?.headers || {}) };

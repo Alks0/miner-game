@@ -86,7 +86,9 @@ export class PlunderScene {
               const res = await NetworkManager.I.request<{ success: boolean; loot_amount: number }>(`/plunder/${id}`, { method: 'POST' });
               if (res.success) {
                 this.log(`成功掠夺 ${id}，获得 ${res.loot_amount}`);
-                showToast(`掠夺成功，获得 ${res.loot_amount}`, 'success');
+                showToast(`掠夺成功，获得 ${res.loot_amount} 矿石`, 'success');
+                // 刷新列表
+                await load();
               } else {
                 this.log(`掠夺 ${id} 失败`);
                 showToast('掠夺失败', 'warn');
@@ -96,7 +98,7 @@ export class PlunderScene {
               const message = e?.message || '掠夺失败';
               this.log(`掠夺失败：${message}`);
               if (message.includes('冷却')) {
-                showToast('掠夺器冷却中，请稍后再试', 'warn');
+                showToast(message, 'warn');
               } else {
                 showToast(message, 'error');
               }

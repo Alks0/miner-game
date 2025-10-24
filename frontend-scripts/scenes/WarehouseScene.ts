@@ -112,8 +112,8 @@ export class WarehouseScene {
                   </div>
                 </div>
                 <div class="actions">
-                  <button class="btn btn-buy" data-act="equip" data-id="${item.id}" ${item.isEquipped ? 'disabled' : ''}><span data-ico="shield"></span>装备</button>
-                  <button class="btn btn-primary" data-act="upgrade" data-id="${item.id}"><span data-ico="wrench"></span>升级</button>
+                  <button class="btn ${item.isEquipped ? 'btn-sell' : 'btn-buy'}" data-act="${item.isEquipped ? 'unequip' : 'equip'}" data-id="${item.id}"><span data-ico="${item.isEquipped ? 'x' : 'shield'}"></span>${item.isEquipped ? '卸下' : '装备'}</button>
+                  <button class="btn btn-primary" data-act="upgrade" data-id="${item.id}" title="消耗 ${item.level * 50} 矿石"><span data-ico="wrench"></span>升级 (${item.level * 50})</button>
                   <button class="btn btn-ghost" data-act="toggle" data-id="${item.id}"><span data-ico="list"></span>详情</button>
                 </div>
               </div>
@@ -167,24 +167,33 @@ export class WarehouseScene {
             }
             try {
               target.disabled = true;
-              target.innerHTML = act === 'equip' ? '<span data-ico="shield"></span>装备中…' : '<span data-ico="wrench"></span>升级中…';
+              if (act === 'equip') {
+                target.innerHTML = '<span data-ico="shield"></span>装备中…';
+              } else if (act === 'unequip') {
+                target.innerHTML = '<span data-ico="x"></span>卸下中…';
+              } else if (act === 'upgrade') {
+                target.innerHTML = '<span data-ico="wrench"></span>升级中…';
+              }
               mountIcons(target);
+              
               if (act === 'equip') {
                 await NetworkManager.I.request('/items/equip', { method: 'POST', body: JSON.stringify({ itemId: id }) });
-                showToast('装备成功');
+                showToast('装备成功', 'success');
+              } else if (act === 'unequip') {
+                await NetworkManager.I.request('/items/unequip', { method: 'POST', body: JSON.stringify({ itemId: id }) });
+                showToast('卸下成功', 'success');
               } else if (act === 'upgrade') {
-                await NetworkManager.I.request('/items/upgrade', { method: 'POST', body: JSON.stringify({ itemId: id }) });
-                showToast('升级成功');
+                const res = await NetworkManager.I.request<{ level: number; cost: number }>('/items/upgrade', { method: 'POST', body: JSON.stringify({ itemId: id }) });
+                // 升级成功动画
+                row.classList.add('upgrade-success');
+                setTimeout(() => row.classList.remove('upgrade-success'), 1000);
+                showToast(`升级成功！等级 ${res.level}（消耗 ${res.cost} 矿石）`, 'success');
               }
+              await bar.update();
               await load();
             } catch (e: any) {
-              showToast(e?.message || '操作失败');
+              showToast(e?.message || '操作失败', 'error');
             } finally {
-              const a = target.getAttribute('data-act');
-              if (a === 'equip') target.innerHTML = '<span data-ico="shield"></span>装备';
-              else if (a === 'upgrade') target.innerHTML = '<span data-ico="wrench"></span>升级';
-              else target.innerHTML = '<span data-ico="list"></span>详情';
-              mountIcons(target);
               target.disabled = false;
             }
           });

@@ -24,8 +24,14 @@ export class ItemController {
     return { ok: true };
   }
 
+  @Post('unequip')
+  unequip(@Req() req: any, @Body() body: { itemId: string }) {
+    this.items.unequip(req.user.sub, body.itemId);
+    return { ok: true };
+  }
+
   @Post('upgrade')
-  upgrade(@Req() req: any, @Body() body: { itemId: string }) {
+  async upgrade(@Req() req: any, @Body() body: { itemId: string }) {
     return this.items.upgrade(req.user.sub, body.itemId);
   }
 }

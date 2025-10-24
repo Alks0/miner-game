@@ -59,7 +59,9 @@ export class ItemService {
     const items = this.listUserItems(userId);
     const item = items.find(i => i.id === itemId);
     if (!item) throw new NotFoundException('道具不存在');
-    if (item.isListed) throw new NotFoundException('道具已在交易中');
+    if (item.isListed) throw new BadRequestException('道具已在交易中');
+    if (item.isEquipped) throw new BadRequestException('道具已装备');
+    
     const template = this.templates.find(t => t.id === item.templateId)!;
     // 同类只允许一个装备
     items.forEach(i => {
@@ -69,13 +71,30 @@ export class ItemService {
     item.isEquipped = true;
   }
 
-  upgrade(userId: string, itemId: string) {
+  unequip(userId: string, itemId: string) {
     const items = this.listUserItems(userId);
     const item = items.find(i => i.id === itemId);
     if (!item) throw new NotFoundException('道具不存在');
-    if (item.isListed) throw new NotFoundException('道具已在交易中');
+    if (!item.isEquipped) throw new BadRequestException('道具未装备');
+    
+    item.isEquipped = false;
+  }
+
+  async upgrade(userId: string, itemId: string) {
+    const items = this.listUserItems(userId);
+    const item = items.find(i => i.id === itemId);
+    if (!item) throw new NotFoundException('道具不存在');
+    if (item.isListed) throw new BadRequestException('道具已在交易中');
+    
+    // 计算升级消耗：等级越高消耗越多
+    const cost = item.level * 50;
+    const consumed = await this.users.consumeResource(userId, 'ore', cost);
+    if (!consumed) {
+      throw new BadRequestException(`矿石不足，需要 ${cost} 矿石`);
+    }
+    
     item.level += 1;
-    return { level: item.level };
+    return { level: item.level, cost };
   }
 
   getEquippedLevels(userId: string) {

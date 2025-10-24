@@ -27,7 +27,11 @@ export type IconName =
   | 'trash'
   | 'close'
   | 'arrow-right'
-  | 'target';
+  | 'target'
+  | 'box'
+  | 'info'
+  | 'logout'
+  | 'x';
 
 function grad(id: string) {
   return `<defs>
@@ -111,6 +115,10 @@ export function renderIcon(name: IconName, opts: { size?: number; className?: st
       return svgWrap(`<path d="M12 3l9 5-9 5-9-5 9-5z" ${stroke}/><path d="M3 8v8l9 5 9-5V8" ${stroke}/><path d="M12 13v8" ${stroke}/>`, size, cls);
     case 'info':
       return svgWrap(`<circle cx="12" cy="12" r="8.5" ${stroke}/><path d="M12 10v6" ${stroke}/><path d="M12 7h.01" ${stroke}/>`, size, cls);
+    case 'logout':
+      return svgWrap(`<path d="M14 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v14a1 1 0 001 1h8a1 1 0 001-1v-3" ${stroke}/><path d="M9 12h11M16 8l4 4-4 4" ${stroke}/>`, size, cls);
+    case 'x':
+      return svgWrap(`<path d="M6 6l12 12M18 6L6 18" ${stroke}/>`, size, cls);
     default:
       return svgWrap(`<circle cx="12" cy="12" r="9" ${stroke}/>`, size, cls);
   }

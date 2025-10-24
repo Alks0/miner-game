@@ -35,6 +35,14 @@ export async function bootstrap(container: HTMLElement) {
   // 立即注入样式，避免FOUC（闪烁）
   ensureGlobalStyles();
   
+  // 尝试恢复会话
+  const restored = await GameManager.I.tryRestoreSession();
+  
+  // 如果有有效token且当前在登录页，跳转到主页
+  if (restored && (location.hash === '' || location.hash === '#/login')) {
+    location.hash = '#/main';
+  }
+  
   // 使用 requestAnimationFrame 确保样式已应用
   requestAnimationFrame(() => {
     routeTo(container);

@@ -20,6 +20,27 @@ export class GameManager {
     }
     this.profile = await nm.request<Profile>('/user/profile');
   }
+
+  async tryRestoreSession(): Promise<boolean> {
+    const nm = NetworkManager.I;
+    const token = nm.getToken();
+    if (!token) return false;
+    
+    try {
+      this.profile = await nm.request<Profile>('/user/profile');
+      return true;
+    } catch {
+      // Token 失效，清除
+      nm.clearToken();
+      return false;
+    }
+  }
+
+  logout() {
+    NetworkManager.I.clearToken();
+    this.profile = null;
+    location.hash = '#/login';
+  }
 }
 
 

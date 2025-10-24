@@ -1,3 +1,4 @@
+import { GameManager } from '../core/GameManager';
 import { renderIcon } from './Icon';
 
 export function renderNav(active: string): HTMLElement {
@@ -21,5 +22,24 @@ export function renderNav(active: string): HTMLElement {
     if (t.key === active) a.classList.add('active');
     wrap.appendChild(a);
   }
+  
+  // 添加退出登录按钮
+  const logoutBtn = document.createElement('a');
+  logoutBtn.href = '#';
+  logoutBtn.className = 'nav-logout';
+  logoutBtn.style.cssText = 'margin-left:auto;opacity:.75;';
+  const logoutIco = renderIcon('logout', { size: 18, className: 'ico' });
+  const logoutLabel = document.createElement('span');
+  logoutLabel.textContent = '退出';
+  logoutBtn.appendChild(logoutIco);
+  logoutBtn.appendChild(logoutLabel);
+  logoutBtn.onclick = (e) => {
+    e.preventDefault();
+    if (confirm('确定要退出登录吗？')) {
+      GameManager.I.logout();
+    }
+  };
+  wrap.appendChild(logoutBtn);
+  
   return wrap;
 }
