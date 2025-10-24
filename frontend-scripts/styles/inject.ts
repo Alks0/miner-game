@@ -272,6 +272,40 @@ html{color-scheme:dark}
 .sp2{animation-delay:0.5s}
 .sp3{animation-delay:1s}
 @keyframes stat-float{0%{cy:25;opacity:0}30%{opacity:0.6}60%{cy:15;opacity:0.8}100%{cy:8;opacity:0}}
+/* 闪电效果 */
+.lightning-effect{position:absolute;inset:0;pointer-events:none;z-index:10}
+.lightning-group{animation:lightning-flash .6s ease}
+@keyframes lightning-flash{0%{opacity:0}10%{opacity:1}20%{opacity:0}30%{opacity:1}40%{opacity:0}}
+.bolt{stroke-dasharray:200;stroke-dashoffset:200;animation:bolt-draw .3s ease forwards}
+@keyframes bolt-draw{to{stroke-dashoffset:0}}
+/* 魔法阵 */
+.magic-circle{position:absolute;inset:0;pointer-events:none;opacity:0.3;z-index:0}
+.magic-ring{stroke-dasharray:4 8;animation:magic-rotate 20s linear infinite}
+.ring-1{animation-duration:20s}
+.ring-2{animation-duration:15s;animation-direction:reverse}
+.ring-3{animation-duration:25s}
+@keyframes magic-rotate{from{transform:rotate(0deg);transform-origin:50% 50%}to{transform:rotate(360deg);transform-origin:50% 50%}}
+.rune{animation:rune-pulse 2s ease-in-out infinite}
+.r1{animation-delay:0s}
+.r2{animation-delay:0.5s}
+.r3{animation-delay:1s}
+.r4{animation-delay:1.5s}
+@keyframes rune-pulse{0%,100%{r:3;opacity:.6}50%{r:5;opacity:1}}
+.center-star{animation:star-rotate 4s linear infinite}
+@keyframes star-rotate{from{transform:rotate(0deg);transform-origin:150px 150px}to{transform:rotate(360deg);transform-origin:150px 150px}}
+/* 星空背景 */
+.starfield{opacity:0.4}
+.star{animation:star-twinkle-bg 4s ease-in-out infinite}
+@keyframes star-twinkle-bg{0%,100%{opacity:0}50%{opacity:0.8}}
+/* 能量脉冲 */
+.pulse-wave{animation:pulse-expand 3s ease-out infinite}
+.wave-1{animation-delay:0s}
+.wave-2{animation-delay:1s}
+.wave-3{animation-delay:2s}
+@keyframes pulse-expand{0%{r:10;opacity:0.8}100%{r:90;opacity:0}}
+/* 数据流 */
+.data-stream{animation:stream-flow 2s linear infinite}
+@keyframes stream-flow{from{transform:translateY(-100px)}to{transform:translateY(100px)}}
 /* vertical timeline */
 .timeline{position:relative;margin-top:8px;padding-left:16px}
 .timeline::before{content:"";position:absolute;left:6px;top:0;bottom:0;width:2px;background:rgba(255,255,255,.1);pointer-events:none}

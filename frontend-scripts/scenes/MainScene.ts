@@ -9,6 +9,7 @@ import { renderIcon } from '../components/Icon';
 import { showAdDialog } from '../components/AdDialog';
 import { createMinerAnimation, createIdleMiner } from '../components/MinerAnimation';
 import { createTreasureChest } from '../components/AnimatedIcons';
+import { createLiquidFilter, createMagicCircle, createStarfield, createLightningBolt } from '../components/AdvancedEffects';
 
 type MineStatus = {
   cartAmount: number;
@@ -66,6 +67,8 @@ export class MainScene {
           <span class="ambient orb orb-a"></span>
           <span class="ambient orb orb-b"></span>
           <span class="ambient grid"></span>
+          <div id="starfield"></div>
+          <div id="magicCircle"></div>
         </div>
         <div class="container main-stack" style="color:#fff;">
           <section class="mine card mine-card fade-in">
@@ -128,6 +131,23 @@ export class MainScene {
     root.appendChild(view);
 
     this.view = view;
+    
+    // 添加高级SVG滤镜
+    const filterDiv = document.createElement('div');
+    filterDiv.innerHTML = createLiquidFilter();
+    document.body.appendChild(filterDiv);
+    
+    // 添加星空背景
+    const starfieldEl = view.querySelector('#starfield');
+    if (starfieldEl) {
+      starfieldEl.appendChild(createStarfield());
+    }
+    
+    // 添加魔法阵
+    const magicCircleEl = view.querySelector('#magicCircle');
+    if (magicCircleEl) {
+      magicCircleEl.appendChild(createMagicCircle());
+    }
     // mount icons in header/buttons
     try {
       view.querySelectorAll('[data-ico]')
@@ -805,6 +825,25 @@ export class MainScene {
     if (this.els.minerChar) {
       this.els.minerChar.classList.add('critical-mining');
       setTimeout(() => this.els.minerChar?.classList.remove('critical-mining'), 1200);
+    }
+    
+    // 闪电特效
+    if (this.els.hologram) {
+      const lightning = createLightningBolt();
+      this.els.hologram.appendChild(lightning);
+      
+      // 触发闪电动画
+      setTimeout(() => {
+        const group = lightning.querySelector('.lightning-group');
+        if (group) {
+          (group as SVGGElement).style.opacity = '1';
+        }
+      }, 50);
+      
+      // 移除闪电
+      setTimeout(() => {
+        lightning.remove();
+      }, 600);
     }
   }
 
