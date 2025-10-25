@@ -1,3 +1,9 @@
+# Git
+.git/
+*.orig
+*.rej
+*.patch
+
 # Logs
 logs/
 *.log
