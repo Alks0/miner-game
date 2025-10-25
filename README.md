@@ -133,16 +133,47 @@ PORT=3002
 
 4. **启动开发服务器**
 
-使用一键启动脚本：
+**方式一：使用 npm 脚本（跨平台）**
 ```bash
 npm run dev
 ```
 
-这将自动完成以下操作：
+**方式二：使用 PowerShell 脚本（Windows 推荐）**
+
+[`dev.ps1`](dev.ps1:1) 提供了更强大的开发体验，支持多种参数：
+
+```powershell
+# 基本启动
+.\dev.ps1
+
+# 自定义端口
+.\dev.ps1 -Port 8080 -BackendPort 3000
+
+# 重新构建前端（清除缓存）
+.\dev.ps1 -Rebuild
+
+# 启动时自动在浏览器中打开
+.\dev.ps1 -Open
+
+# 杀死占用端口的进程后启动
+.\dev.ps1 -KillExisting
+
+# 组合使用多个参数
+.\dev.ps1 -Rebuild -Open -Port 8080 -KillExisting
+```
+
+**参数说明：**
+- `-Port <端口号>` - 自定义前端端口（默认 5173）
+- `-BackendPort <端口号>` - 自定义后端端口（默认 3002）
+- `-Rebuild` - 启动前重新构建前端代码
+- `-Open` - 启动后自动在默认浏览器中打开
+- `-KillExisting` - 自动杀死占用端口的进程
+
+启动后将自动完成：
 - 安装后端依赖
-- 启动 NestJS 后端服务 (端口 3002)
+- 启动 NestJS 后端服务（默认端口 3002）
 - 实时编译前端 TypeScript 代码
-- 启动前端开发服务器 (端口 5173)
+- 启动前端开发服务器（默认端口 5173）
 - 配置 API 代理
 
 5. **访问游戏**
